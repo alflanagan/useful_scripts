@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+import sys,os,re,subprocess
+
+def line_is_function_decl(line, func_name):
+    #match bash explicit function declaration
+    #function func_name {}
+    x = re.compile(r'\s*function\s+%s[\s{(]' % func_name)
+    m = x.match(line)
+    if m:
+        return True
+    #match bash implicit function declaration
+    #func_name() {}
+    x = re.compile(r'\s*%s\s*\(\)' % func_name)
+    m = x.match(line)
+    if m:
+        return True
+    return False
+
+
+if len(sys.argv) < 2:
+    print "Usage: %s _function_name_" % os.path.basename(sys.argv[0])
+    print "       shows code for a function from functions.bash"
+else:
+    #TODO: call which on arg, only search functions if not found
+    #TODO: figure out way to access calling shell's function environment from python
+    with open(os.path.join(os.environ['HOME'],'bin', 'functions.bash'), 'r') as funfile:
+        #a couple of flags -- primitive state machine
+        printing = False
+        isfirstline = False
+        for line in funfile:
+            line = line[:-1]
+            if line_is_function_decl(line, sys.argv[1]):
+                isfirstline = True
+                printing = True
+            else:
+                isfirstline = False
+            if printing:
+                print line
+                #cheating here. I think you can have nested {}, and of
+                #course the } doesn't have to start the line, that's just
+                #my coding convention
+            if line.startswith('}'):
+                printing = False
+            #special case: func definition on one line
+            if isfirstline and line.endswith('}'):
+                printing = False
