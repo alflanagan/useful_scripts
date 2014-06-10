@@ -11,6 +11,13 @@ TERM_UL_OFF=$(tput -T xterm rmul)
 
 #a lot of useful bash functions
 bldpath() {
+    #bldpath VARNAME DIR [before|after]
+    #VARNAME names an environment variable formatted like PATH (e.g. PATH, 
+    #  LD_LIBRARY_PATH, PYTHONPATH)
+    #DIR is a directory which will be added to the variable named by VARNAME
+    #but only if it's not already present
+    #no validation is done on DIR: don't care if it doesn't exist
+    #DIR is added to the end of the variable unless third argument is "before"
     local -r VARNAME="$1"
     local -r DIR="$2"
     if [[ -n $3 ]]; then
@@ -48,9 +55,9 @@ bldpath() {
 
 function pathmunge {
     if [[ $# -eq 0 ]]; then
-        echo "${FUNCNAME} dir_path [after]"
+        echo "${FUNCNAME} dir_path [before|after]"
         echo "     adds dir_path to PATH variable"
-        echo "     adds at beginning unless after specified."
+        echo "     adds to end unless 'before' specified."
         return 1
     fi
     if [[ ! -d "$1" ]]; then
@@ -79,10 +86,22 @@ function pathrm {
 }
 
 function manmunge {
+    if [[ $# -lt 1 ]]; then
+        echo "${FUNCNAME} ${TERM_UL_ON}directory${TERM_UL_OFF} [before|after]"
+        echo "    Adds ${TERM_UL_ON}directory${TERM_UL_OFF} to MANPATH environment variable."
+        echo "    ${TERM_UL_ON}directory${TERM_UL_OFF} is added to end unless 'before' is specified."
+        return 1
+    fi
     bldpath MANPATH "$1" "$2"
 } 
 
 function ldlibmunge {
+    if [[ $# -lt 1 ]]; then
+        echo "${FUNCNAME} ${TERM_UL_ON}directory${TERM_UL_OFF} [before|after]"
+        echo "    Adds ${TERM_UL_ON}directory${TERM_UL_OFF} to LD_LIBRARY_PATH environment variable."
+        echo "    ${TERM_UL_ON}directory${TERM_UL_OFF} is added to end unless 'before' is specified."
+        return 1
+    fi
     bldpath LD_LIBRARY_PATH "$1" "$2"
 }
 
@@ -342,6 +361,12 @@ function h2d {
     dc -e "16i${hexnum}p"
 }
 
+x2d () {
+    #turns out when I try to remember "h2d" my brain comes up with
+    #"x2d" instead. Go figure.
+    h2d "$@"
+}
+
 function curl_get {
     if [[ $# -lt 1 ]]; then
         echo "Usage: ${FUNCNAME} URL [destination_file_name]"
@@ -419,4 +444,10 @@ function umbrello
 function dtree
 {
     tree -d "$@"
+}
+
+extra () {
+    #switch from home directory to parallel directory on /mnt/extra
+    #for when I don't want to work through soft links
+    cd $(pwd | sed -e "s|/home/aflanagan/|/mnt/extra/|")
 }
