@@ -1,0 +1,185 @@
+#!/usr/bin/env bash
+
+:
+##########################################################################
+# Title      :  rfcat - print RFC text
+# Version    :  2.6
+# Author     :  Heiner Steven <heiner.steven@odn.de>
+# Date       :  2001-04-25
+# Requires   :  wget, gzip
+# Category   :  WWW
+# SCCS-Id.   :  @(#) rfcat  2.6 09/10/21
+##########################################################################
+# Description
+#    o  Prints the text of an internet standard (RFC: "Request For
+#   Comments") to standard output. Tries to locate the RFC locally,
+#   and retrieves it otherwise direcly from the Web.
+#    o  Each RFC text file can optionally be cached after first retrieval
+##########################################################################
+
+PN=`basename "$0"`          # Program name
+VER='2.6'
+
+# A program to accept an URL as command line argument, retrieves it, and
+# prints the results to standard output
+: ${GETURL:=wget}
+: ${GETURLFLAGS="-O- -q"}   # may be empty
+
+: ${COMPRESS:=gzip}
+: ${COMPRESSFLAGS=-f}       # may be empty
+
+# The local directory all RFCs are contained within
+: ${RFCDIR:=/usr/local/share/rfc}
+
+# The base WWW URL for all RFCs
+RFC_BASE_URL=http://www.ietf.org
+
+# The URL of the "INDEX" page
+RFC_INDEX_URL=$RFC_BASE_URL/download/rfc-index.txt
+
+# A template for an RFC URL. The string '${no}' will be replaced by the
+# RFC's number
+RFC_BY_NUMBER_TEMPL="$RFC_BASE_URL/rfc/rfc\${no}.txt"
+
+#########################################################################
+
+Usage () {
+    echo >&2 "$PN - print RFC text, $VER (stv)
+usage: $PN [-fc] rfcspec [...]
+   -c:  create a local copy of the file, if it does not exist already
+   -f:  force retrieval of the file from the Web
+
+An rfcspec can be a RFC number (e.g. 2100), or the symbolic name
+\"INDEX\". The RFC is searched locally (RFCDIR=$RFCDIR).
+If this was not successful, $PN will retrieve it from $RFC_BASE_URL."
+    exit 1
+}
+
+Msg () {
+    for MsgLine
+    do echo "$PN: $MsgLine" >&2
+    done
+}
+
+Fatal () { Msg "$@"; exit 1; }
+
+#########################################################################
+# rfc2path - convert RFC specification to local path name of file
+#########################################################################
+
+rfc2path () {
+    [ $# -eq 1 ] || Fatal "INTERNAL ERROR: rfc2path needs one argument"
+
+    _rfcspec=$1; shift
+
+    case "$_rfcspec" in
+        INDEX)
+        _url=$RFC_INDEX_URL;;
+    *)
+        no=$_rfcspec
+        eval _url="$RFC_BY_NUMBER_TEMPL";
+    esac
+    echo $RFCDIR/rfc$_rfcspec
+}
+
+#########################################################################
+# rfc2url - convert RFC specification to URL of file
+#########################################################################
+
+rfc2url () {
+    [ $# -eq 1 ] || Fatal "INTERNAL ERROR: rfc2url needs one argument"
+
+    _rfcspec=$1; shift
+
+    case "$_rfcspec" in
+        INDEX)
+        _url=$RFC_INDEX_URL;;
+    *)
+        no=$_rfcspec
+        eval _url="$RFC_BY_NUMBER_TEMPL";
+    esac
+    echo "$_url"
+}
+
+#########################################################################
+
+set -- `getopt cfh "$@"` || Usage
+[ $# -lt 1 ] && Usage           # "getopt" detected an error
+
+CacheFile=false
+ForceRetrieval=false
+while [ $# -gt 0 ]
+do
+    case "$1" in
+        -c) CacheFile=true;;
+        -f) ForceRetrieval=true;;
+    --) shift; break;;
+    -h) Usage;;
+    -*) Usage;;
+    *)  break;;         # First file name
+    esac
+    shift
+done
+
+[ $# -lt 1 ] && Usage
+
+errors=0
+for rfc
+do
+    rfc=`echo "$rfc" | sed 's/^00*//g'` # remove leading zeroes
+
+    #
+    # Search RFC locally
+    #
+
+    file=`rfc2path "$rfc"`
+    if [ -n "$file" ] && [ $ForceRetrieval = false ]
+    then
+    for ext in "" .gz .Z .z .txt.gz .txt.Z .txt.z
+    do
+        [ -r "$file$ext" ] || continue
+        case "$ext" in
+        "")     cat "$file$ext" ;;
+        *.gz )  gunzip -c "$file$ext";;
+        *.Z )   zcat "$file$ext";;
+        *.z )   unpack "$file$ext";;
+        esac
+        [ $? -eq 0 ] || errors=`expr $errors + 1`
+        continue 2          # Next RFC
+    done
+    fi
+
+    #
+    # No local file. Try to retrieve the RFC via URL
+    #
+
+    url=`rfc2url "$rfc"`
+    if [ -n "$url" ]
+    then
+        # Get the RFC using the Web.
+    # XXX: This page could be cached locally using
+    #   ... | tee $RFCDIR/...
+
+    if [ $CacheFile = true ]
+    then
+        # Retrieve file, and create a local copy.
+
+        # Ignore keyboard signals, because they could cause the local copy
+        # to be incomplete
+
+        trap '' 1 2 3 13 15
+        $GETURL $GETURLFLAGS "$url" | tee "$file"
+        trap 1 2 3 13 15
+        if [ -s "$file" ]
+        then "$COMPRESS" $COMPRESSFLAGS "$file"
+        else rm -f "$file"          # remove empty file
+        fi
+    else
+        $GETURL $GETURLFLAGS "$url"
+    fi
+    [ $? -ne 0 ] && errors=`expr $errors + 1`
+
+    fi
+done
+exit $errors
+
