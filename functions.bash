@@ -53,7 +53,7 @@ bldpath() {
     esac
 }
 
-function pathmunge {
+pathmunge() {
     if [[ $# -eq 0 ]]; then
         echo "${FUNCNAME} dir_path [before|after]"
         echo "     adds dir_path to PATH variable"
@@ -67,7 +67,7 @@ function pathmunge {
     bldpath PATH "$1" "$2"
 } 
 
-function is_in_path {
+is_in_path() {
     local DIR="$1"
     #extra colons simplify case
     case :${PATH}: in
@@ -79,13 +79,13 @@ function is_in_path {
 }
 
 #TODO: generalize to take path variable name as param
-function pathrm {
+pathrm() {
     local NEW_PATH=$(echo ${PATH} | tr ':' '\n' | grep -v "^$1$" | grep -v '^$' | tr '\n' ':')
     #above *might* leave a trailing colon, kill it
     export PATH=${NEW_PATH%:}
 }
 
-function manmunge {
+manmunge() {
     if [[ $# -lt 1 ]]; then
         echo "${FUNCNAME} ${TERM_UL_ON}directory${TERM_UL_OFF} [before|after]"
         echo "    Adds ${TERM_UL_ON}directory${TERM_UL_OFF} to MANPATH environment variable."
@@ -95,7 +95,7 @@ function manmunge {
     bldpath MANPATH "$1" "$2"
 } 
 
-function ldlibmunge {
+ldlibmunge() {
     if [[ $# -lt 1 ]]; then
         echo "${FUNCNAME} ${TERM_UL_ON}directory${TERM_UL_OFF} [before|after]"
         echo "    Adds ${TERM_UL_ON}directory${TERM_UL_OFF} to LD_LIBRARY_PATH environment variable."
@@ -105,13 +105,13 @@ function ldlibmunge {
     bldpath LD_LIBRARY_PATH "$1" "$2"
 }
 
-function myps {
+myps() {
 #list processes running under current user's name, except for some system stuff
 #cat causes whole line to print, wrapped
     ps -fu $(whoami) | cat
 }
 
-function fixldpath {
+fixldpath() {
 #eliminates duplicates from LD_LIBRARY_PATH variable
     local newldpath
     for DIR in $(echo ${LD_LIBRARY_PATH} | tr ':' '\n')
@@ -122,12 +122,12 @@ function fixldpath {
 }
 
 #TODO: modify this so that functions can have special doc comment as first line
-function functions {
+functions() {
 #hmm... typeset -f strips comments.
     typeset -f | grep '() $' | sed 's/() //' | sed 's/ //g'
 }
 
-function findtextin {
+findtextin() {
     if [[ $# -lt 3 ]]; then
         echo "Usage: ${FUNCNAME} <start-dir> '<file-pattern>' <search-text>"
         echo "       Don't forget the single quotes around <file-pattern>"
@@ -137,7 +137,7 @@ function findtextin {
         echo '                      <file-pattern>'
         return 1
     fi
-    find "$1" -name "$2" -exec grep "$3" '{}' /dev/null \;
+    find "$1" -name "$2" -print0 | xargs -0 grep "$3"
 }
 
 #appears to be no way to turn off unalias error if alias doesn't exist
@@ -147,16 +147,16 @@ ll() {
 }
 
 #one-line functions must have ';' before final }
-function lrt { ls -lrt "$@"; }
-function lrtail { ls -lrt "$@" | tail; }
-function lrtc { ls -lrt "$@" | commall.py; }
+lrt() { ls -lrt "$@"; }
+lrtail() { ls -lrt "$@" | tail; }
+lrtc() { ls -lrt "$@" | commall.py; }
 
-function largest {
+largest() {
     #or use ls -S
     ls -l "$@" | sort -r -g -k5
 }
 
-function chkswap {
+chkswap() {
     if [[ $# -eq 0 ]]; then
         echo provide an integer argument to see totals every argument seconds
         echo this is a summary since last boot.
@@ -164,18 +164,18 @@ function chkswap {
     vmstat -a -S M "$@"
 }
 
-function chkdiskio {
+chkdiskio() {
     vmstat -d -S M "$@"
 }
 
-function chkpartio {
+chkpartio() {
 #TODO: intelligently get list of partitions
     vmstat -p sda1
     vmstat -p sda2
     vmstat -p sda3
 }
 
-function lnall {
+lnall() {
     if [[ $# -ne 3 ]]; then
         echo "Usage: ${FUNCNAME} path filename linkname"
         echo '       finds all files named {filename} in {path} or subdirectories of {path}'
@@ -194,18 +194,18 @@ function lnall {
     done
 }
 
-function find_no_svn {
+find_no_svn() {
     local find_path=$1
     shift
     find "${find_path}" ! -iregex '.*\\.svn.*' "$*"
 }
 
-function find_no_svn_grep {
+find_no_svn_grep() {
     if  [[ $# -eq 0 ]]; then
-        echo "${FUNCNAME} ${TERM_UL_ON}search_term${TERM_UL_OFF} ${TERM_UL_ON}additional_find_options${TERM_UL_OFF}"
+        echo "${FUNCNAME} ${TERM_UL_ON}[path-spec]${TERM_UL_OFF} ${TERM_UL_ON}search_term${TERM_UL_OFF} ${TERM_UL_ON}additional_find_options${TERM_UL_OFF}"
         echo "    grep selected files for lines containing ${TERM_UL_ON}search_term${TERM_UL_OFF}."
         echo "    ${TERM_UL_ON}additional_find_options${TERM_UL_OFF} are any valid options for find (1)."
-        echo "    Detects when first argument is a directory, and starts from there."
+        echo "    ${TERM_UL_ON}path_spec${TERM_UL_OFF} defaults to current directory."
     else
         local DIR="."
         if [[ -d "$1" ]]; then
@@ -215,12 +215,12 @@ function find_no_svn_grep {
 
         local search_term="$1"
         shift
-        echo find ${DIR} $* ! -iregex \'.*/\\.svn/.*\' -exec grep -IH \"${search_term}\" \'{}\' \\\;
-        find ${DIR} $* ! -iregex '.*/\.svn/.*' $* -exec grep -IH "${search_term}" '{}' \;
+        echo find ${DIR} $* ! -iregex \'.*/\\.svn/.*\' -print0 \| xargs -0 grep -IH \"${search_term}\"
+        find ${DIR} $* ! -iregex '.*/\.svn/.*' $* -print0 | xargs -0 grep -IH "${search_term}"
     fi
 }
 
-function find_no_svn_igrep {
+find_no_svn_igrep() {
     if  [[ $# -eq 0 ]]; then
         echo "${FUNCNAME} ${TERM_UL_ON}search_term${TERM_UL_OFF} ${TERM_UL_ON}additional_find_options${TERM_UL_OFF}"
         echo "    case-insensitive grep selected files for lines containing ${TERM_UL_ON}search_term${TERM_UL_OFF}."
@@ -240,7 +240,7 @@ function find_no_svn_igrep {
     fi
 }
 
-function execsql {
+execsql() {
     if  [[ $# -eq 0 ]]; then
         echo "${FUNCNAME} ${TERM_UL_ON}sql_file${TERM_UL_OFF} ${TERM_UL_ON}additional_psql_options${TERM_UL_OFF}"
         echo "    Call psql to execute ${TERM_UL_ON}sql_file${TERM_UL_OFF} in database netinformer as user apache."
@@ -251,7 +251,7 @@ function execsql {
     fi
 }
 
-function domysql {
+domysql() {
     if  [[ $# -eq 0 ]]; then
         echo "${FUNCNAME} ${TERM_UL_ON}db_name${TERM_UL_OFF} ${TERM_UL_ON}sql_statement${TERM_UL_OFF}"
         echo "    Execute ${TERM_UL_ON}sql_statement${TERM_UL_OFF} with mysql using database ${TERM_UL_ON}db_name${TERM_UL_OFF}."
@@ -263,7 +263,7 @@ HERE
     fi
 }
 
-function execmysql {
+execmysql() {
     if  [[ $# -eq 0 ]]; then
         echo "${FUNCNAME} ${TERM_UL_ON}sql_file${TERM_UL_OFF}"
         echo "    Execute SQL statements in ${TERM_UL_ON}sql_file${TERM_UL_OFF} with mysql."
@@ -272,7 +272,7 @@ function execmysql {
     fi
 }
 
-function lgv {
+lgv() {
     if [[ $# -lt 1 ]]; then
         echo "${FUNCNAME} some-pattern [ls-options] -- list all files that don't match some-pattern"
     elif [[ $# -eq 1 ]]; then
@@ -284,7 +284,7 @@ function lgv {
     fi
 }
 
-function llgv {
+llgv() {
     if [[ $# -lt 1 ]]; then
         echo "${FUNCNAME} some-pattern [ls-options] -- list (long form) all files that don't match some-pattern"
     else
@@ -292,7 +292,7 @@ function llgv {
     fi
 }
 
-function every {
+every() {
 #TODO: detect, handle bad input
     if [[ $# -lt 3 ]]; then
         echo "Usage: ${FUNCNAME} _seconds_ do _command_"
@@ -315,7 +315,7 @@ function every {
     done
 }
 
-function with {
+with() {
     local ON=${TERM_UL_ON}
     local OFF=${TERM_UL_OFF}
     if [[ $# -lt 3 ]]; then
@@ -336,7 +336,7 @@ function with {
     cd ${OLD_DIR}
 }
 
-function sum_size {
+sum_size() {
     #TODO: use getopts to parse args, check only for file name args below
     #i.e. "sum_size -h" should generate usage message
     if [[ $# -lt 1 ]]; then
@@ -349,7 +349,7 @@ function sum_size {
     echo ${TOTAL} | cut -f1 -d" "
 }
 
-function h2d {
+h2d() {
     if [[ $# -lt 1 ]]; then
         echo "Usage: ${FUNCNAME} hex_number"
         echo "       converts hex_number from hexadecimal to integer, prints result."
@@ -367,7 +367,7 @@ x2d () {
     h2d "$@"
 }
 
-function curl_get {
+curl_get() {
     if [[ $# -lt 1 ]]; then
         echo "Usage: ${FUNCNAME} URL [destination_file_name]"
         echo "       Retrieves a URL using curl and saves it to a file. Handles errors intelligently"
@@ -387,7 +387,7 @@ function curl_get {
     fi
 }
 
-function curl_get_missing {
+curl_get_missing() {
     if [[ $# -lt 1 ]]; then
         echo "Usage: ${FUNCNAME} URL [destination_file_name]"
         echo "       Retrieves a URL using curl and saves it to a file. Handles errors intelligently."
@@ -404,50 +404,78 @@ function curl_get_missing {
     fi
 }
 
-function which
-{
+which() {
 #TODO: won't find executable file if function or alias exists
     (alias; declare -f) | /usr/bin/which --tty-only --read-alias --read-functions --show-tilde --show-dot "$@"
 }
 
-function wing5
-{
+wing5() {
     #verbose causes errors to log, etc.
     /usr/bin/wing5.0 --verbose "$@" > /home/aflanagan/log/wing5.log 2>&1 &
     #/usr/bin/wing5.0 "$@" > /home/aflanagan/log/wing5.log 2>&1 &
 }
 
-function wing
-{
+wing() {
     wing5
 }
 
 #get list of files in a zip, dropping all info except file names
-function zip_list
-{
+zip_list() {
     unzip -l "$@" | cut -c 31- | tail -n +4  | head -n -2
 }
 
-function endswith
-{
+endswith() {
     local VALUE=$1
     local ENDING=$2
     [[ ${VALUE%${ENDING}} != ${VALUE} ]]
     return $?
 }
 
-function umbrello
-{
+umbrello() {
     /usr/bin/umbrello "$@" > ~/log/umbrello.log 2>&1 &
 }
 
-function dtree
-{
+dtree() {
     tree -d "$@"
 }
 
-extra () {
+extra() {
     #switch from home directory to parallel directory on /mnt/extra
     #for when I don't want to work through soft links
-    cd $(pwd | sed -e "s|/home/aflanagan/|/mnt/extra/|")
+    cd $(pwd | sed -e "s|/home/aflanagan|/mnt/extra|")
 }
+
+view_html() {
+    firefox -new-window file://localhost$(pwd)/"$@" &
+}
+
+dbshell() {
+    if [[ -f manage.py ]]; then
+        python manage.py dbshell
+    elif [[ -f ../manage.py ]]; then
+        python ../manage.py dbshell
+    else
+        echo "Can't start dbshell; where is manage.py?" >&2
+    fi
+}
+
+truepath () {
+    # provide a more memorable name
+    readlink -f "$@"
+}
+
+cs() {
+    python manage.py collectstatic --noinput;
+}
+
+firefox() {
+    ~/opt/bin/firefox > ~/log/firefox.log 2>&1 &
+}
+
+ecompile() {
+    emacs --batch -f batch-byte-compile "$@"
+}
+
+# Local Variables:
+# coding: utf-8-unix
+# End:
