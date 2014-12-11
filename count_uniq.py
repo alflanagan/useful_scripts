@@ -1,24 +1,29 @@
-#!/usr/bin/env python2
-
+#!/usr/bin/env python3
 import sys
+from collections import defaultdict
 
-d = {}
-for line in sys.stdin.readlines():
-    line = line[:-1]
-    try:
+
+def count_uniq_lines(input_stream):
+    d = defaultdict(int)  # default 0
+
+    for line in sys.stdin:
+        line = line[:-1]
         d[line] = d[line] + 1
-    except KeyError:
-        d[line] = 1
 
-#print "Found %d distinct lines." % len(d.keys())
+    sum = 0
+    for l in d.keys():
+        sum = sum + d[l]
+        print("Total # of lines is {}.".format(sum([v for k, v in d])))
 
-sum = 0
-for l in d.keys():
-    sum = sum + d[l]
-print "Total # of lines is %d" % sum
+    k = d.keys()
+    k.sort()
+    for b in k:
+        print("{}:  {}".format(b, d[b]))
 
-#for b in [x for x in d.keys() if d[x] > 500]:
-k = d.keys()
-k.sort()
-for b in k:
-    print "%s:  %d" % (b, d[b])
+if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        with open(sys.argv[1], "r") as txt_in:
+            print("Reading from {}.".format(sys.argv[1]))
+            count_uniq_lines(txt_in)
+    else:
+        count_uniq_lines(sys.stdin)
