@@ -411,7 +411,7 @@ which() {
 
 wing5() {
     #verbose causes errors to log, etc.
-    /usr/bin/wing5.0 --verbose "$@" > /home/aflanagan/log/wing5.log 2>&1 &
+    /usr/bin/wing5.1 --verbose "$@" > /home/aflanagan/log/wing5.log 2>&1 &
     #/usr/bin/wing5.0 "$@" > /home/aflanagan/log/wing5.log 2>&1 &
 }
 
@@ -474,6 +474,35 @@ firefox() {
 
 ecompile() {
     emacs --batch -f batch-byte-compile "$@"
+}
+
+columns() {
+    if [[ $# -gt 0 ]]; then
+        pr -t -T -$1
+    else
+        pr -t -T
+    fi
+}
+
+# generate a list of completion words for a command
+# comp git config ''
+# ==> add.ignore-errors alias. apply.ignorewhitespace apply.whitespace ...
+# from http://unix.stackexchange.com/questions/25935/how-to-output-string-completions-to-stdout
+# user yuyichao
+comp() {
+    # set up variables used by bash completion funcionality
+    COMP_LINE="$*"
+    COMP_WORDS=("$@")
+    COMP_CWORD=${#COMP_WORDS[@]}
+    ((COMP_CWORD--))
+    COMP_POINT=${#COMP_LINE}
+    COMP_WORDBREAKS='"'"'><=;|&(:"
+    # Don't really think any real autocompletion script will rely on
+    # the following 2 vars, but in principle they could ~~~  LOL.
+    COMP_TYPE=9
+    COMP_KEY=9
+    _command_offset 0
+    echo ${COMPREPLY[@]}
 }
 
 # Local Variables:
