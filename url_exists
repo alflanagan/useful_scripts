@@ -1,0 +1,9 @@
+#!/usr/bin/env dash
+
+curl "$@" -f > /dev/null 2>&1
+ERR=$?
+if [ ${ERR} -eq 0 ]; then
+   echo OK
+else
+   echo Failed
+fi
