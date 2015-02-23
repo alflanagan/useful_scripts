@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# -*- coding: utf-8; -*-
+
+if [[ $# -lt 1 ]]; then
+    echo "$(basename $0) org_file_name"
+    echo "    Calls emacs in batch node to tangle the .org file and execute the resulting emacs lisp files."
+    exit 1
+elif [[ ! -r $1 ]]; then
+    echo "$(basename $0) org_file_name"
+    echo "    $1 is not a readable file."
+    exit 2
+fi
+
+# echo emacs --batch --eval "(require 'org)" --eval "(org-babel-load-file \""$@"\")"
+emacs --batch --eval "(require 'org)" --eval "(org-babel-load-file \""$@"\")"
