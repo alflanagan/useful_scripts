@@ -491,16 +491,16 @@ columns() {
 # user yuyichao
 comp() {
     # set up variables used by bash completion funcionality
-    COMP_LINE="$*"
-    COMP_WORDS=("$@")
-    COMP_CWORD=${#COMP_WORDS[@]}
+    local COMP_LINE="$*"
+    local COMP_WORDS=("$@")
+    local COMP_CWORD=${#COMP_WORDS[@]}
     ((COMP_CWORD--))
-    COMP_POINT=${#COMP_LINE}
-    COMP_WORDBREAKS='"'"'><=;|&(:"
+    local COMP_POINT=${#COMP_LINE}
+    local COMP_WORDBREAKS='"'"'><=;|&(:"
     # Don't really think any real autocompletion script will rely on
     # the following 2 vars, but in principle they could ~~~  LOL.
-    COMP_TYPE=9
-    COMP_KEY=9
+    local COMP_TYPE=9
+    local COMP_KEY=9
     _command_offset 0
     echo ${COMPREPLY[@]}
 }
