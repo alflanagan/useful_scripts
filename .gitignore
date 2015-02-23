@@ -1,0 +1,18 @@
+# WingIDE user-specific settings
+*.wpu
+# archives
+*.gz
+*.tgz
+# my local git install (CentOS6 way behind)
+git*
+# compiled python
+*.pyo
+*.pyc
+# other local GNU utilities
+install-info
+# emacs project management
+cask
+# an actual compiled executable
+catz
+# squirrel-SQL
+squirrel*
