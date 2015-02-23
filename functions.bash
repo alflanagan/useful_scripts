@@ -468,6 +468,10 @@ cs() {
     python manage.py collectstatic --noinput;
 }
 
+chrome() {
+    /usr/bin/chrome >~/log/chrome.log 2>&1 &
+}
+
 firefox() {
     ~/opt/bin/firefox > ~/log/firefox.log 2>&1 &
 }
