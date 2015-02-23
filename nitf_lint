@@ -1,0 +1,17 @@
+#!/usr/bin/env dash
+# TODO: accept NITF version as parameter, and/or prompt for it
+
+#DTD_DOC="/home/aflanagan/xsd/nitf-3-1.dtd"
+DTD_DOC="/home/aflanagan/xsd/nitf-3-3.dtd"
+#DTD_DOC="http://www.nitf.org/site/nitf-documentation/nitf-3-1.dtd"
+#SCHEMA=~/xsd/nitf-3-3.xsd
+
+if [ $# -lt 1 ]; then
+    echo "Usage: $(basename $0) nitf_xml_file"
+    echo "       Validates an XML file against the NITF 3.3 DTD"
+    #echo "       Validates an XML file against the NITF 3.3. schema"
+else
+    #xmllint "$1" --noout --dtdvalid http://www.iptc.org/std/NITF/3.4/specification/dtd/nitf-3-4.dtd
+    xmllint "$1" --noout --dtdvalid ${DTD_DOC}
+    #xmllint "$@" --path ~/xsd --noout --schema ${SCHEMA}
+fi
