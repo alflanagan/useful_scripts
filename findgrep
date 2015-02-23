@@ -1,0 +1,18 @@
+#!/usr/bin/env dash
+NM=$(basename $0)
+
+if [ $# -lt 2 ]; then
+    echo "Usage: ${NM} <start-path> <string-to-find> <additional-find-options>"
+    echo "Examples: ${NM} . fred"
+    echo "          --> finds all occurrences of fred in any file in this dir or subdirs"
+    echo "          ${NM} /etc fred ! -name \"x3*\""
+    echo "          --> finds all occurrences of fred in any file whose name doesn't"
+    echo "              begin with x3 in /etc or any of its subdirectories"
+    exit 1
+fi 
+
+STARTP=$1
+SEARCHSTR=$2
+shift 2
+echo find "${STARTP}" -type f $* -exec grep "${SEARCHSTR}" \'{}\' /dev/null \\\;
+find "${STARTP}" -type f $* -exec grep "${SEARCHSTR}" '{}' /dev/null \;
