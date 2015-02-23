@@ -1,0 +1,28 @@
+#!/usr/bin/env python2.7
+
+import os
+import sys
+
+
+def exts_in_dir(dir_name, report_backups=False):
+  """Returns a set containing all extensions for file names in directory `dir_name`."""
+  all_files = os.listdir(dir_name)
+  extensions=set([])
+
+  for fname in all_files:
+    if os.path.isfile(fname):
+      _, ext = os.path.splitext(fname)
+      if report_backups or not ext.endswith("~"):
+        extensions.add(ext)
+
+  return extensions
+
+
+if __name__ == '__main__':
+  if len(sys.argv) < 2:
+    sys.stderr.write("Usage: {} directory\n".format(os.path.basename(sys.argv[0])))
+    sys.stderr.write("       Prints a list of all extensions for files in directory.\n")
+    sys.exit(1)
+  ext_set = exts_in_dir(sys.argv[1], False)
+  for ext in ext_set:
+    print(ext)
