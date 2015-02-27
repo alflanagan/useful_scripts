@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+echo "WARNING: web-page is a misnomer until I implement querying anything but root doc on domain"
+
+# based on recipe "Using bash Net-Redirection"
+# in "bash Cookbook" (O'Reilly)
+
+if [[ $# -lt 1 ]]; then
+    echo "$(basename $0) web_address"
+    echo "    GETs the web page at web_address and prints it to stdout."
+    exit 1
+fi
+
+# note must be careful of quotes in python3 call, so $1 will expand
+DOMAIN=$(python3 -c "from urllib.parse import urlsplit;print(urlsplit(\"$1\").netloc)")
+
+REST=$(python3 -c "from urllib.parse import urlsplit;print(\"{path}?{query}\".format(urlsplit(\"$1\").path))")
+echo $REST
+exit
+
+# TODO: split out domain from URL, use /dev/tcp/$DOMAIN, then
+#       GET $REST
+# set up file descriptor 3 as temporary stream tied to web page
+exec 3<> /dev/tcp/${1##http://}/80
+# request page
+echo -e "GET / HTTP/1.0\n" >&3
+# print temporary stream to stdout and close
+cat <&3-
+    
