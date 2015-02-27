@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+
+#backup a set of directories in home
+#unlike shell script, handles spaces in directory/file names just fine
+
+import subprocess
+import os
+import sys
+
+USER_HOME = "/home/aflanagan"
+LOG=os.path.join(USER_HOME, 'log/total_backup.log')
+
+def run_with_logging(command):
+    global USER_HOME, LOG
+    with open(LOG, 'a') as lfile:
+        lfile.write("command: {0}\n".format(command))
+    try:
+        p = subprocess.Popen(command, shell=True, 
+                             stderr=subprocess.STDOUT, stdout=subprocess.PIPE,
+                             cwd=USER_HOME)
+        with open(LOG, 'a') as lfile:
+            for line in p.stdout:
+                lfile.write(line)
+    except subprocess.CalledProcessError, e:
+        with open(LOG, 'a') as lfile:
+            lfile.write("ERROR: {0}".format(str(e)))
+        sys.stderr.write("{0}\n".format(str(e)))
+
+
+if __name__ == '__main__':
+    DTSTAMP = ""
+    d = subprocess.Popen('date +%Y%m%d_%H%M', shell=True, stdout=subprocess.PIPE)
+    for line in d.stdout:
+        DTSTAMP=line.rstrip('\r\n')
+
+    FNAME="/var/backups/aflanagan.{0}.tar".format(DTSTAMP)
+    EXCEPT_DIRS=(".alf_trash", "backups", "bkp.viminfo", ".cache", "Downloads", ".filezilla",
+                "install", ".java", ".kde", ".lastpass", ".mozilla", "opt", ".PyCharm20", "temp", 
+                ".thumbnails", "Videos", ".wingide4")
+    TAR_OPTIONS='-p --acls --selinux --xattrs  --file="{0}"'.format(FNAME)
+    EXCEPT_REGEX=(r".*/python2.6/.*", )
+
+    me_dirs = ["Devel",  "Documents"] 
+    me_dirs = [os.path.join('/', 'mnt', 'extra', d) for d in me_dirs]
+
+    first_tar = True  #ok, a little bit braindead
+    for DIR in os.listdir(USER_HOME) + me_dirs:
+        if DIR in EXCEPT_DIRS or os.path.islink(DIR):
+            continue
+        if first_tar:
+            command = 'tar -c {0} "{1}"'.format(TAR_OPTIONS, DIR)
+            first_tar = False
+        else:
+            command = 'tar -r {0} "{1}"'.format(TAR_OPTIONS, DIR)
+        run_with_logging(command)
+
+    gzip_cmd = "nohup gzip {0} 2>&1 >> {1} &".format(FNAME, LOG)
+    run_with_logging(gzip_cmd)
+    run_with_logging("chown aflanagan:aflanagan {0}.gz".format(FNAME))
