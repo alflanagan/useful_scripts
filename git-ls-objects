@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+
+import subprocess
+import sys
+import argparse
+
+
+def get_options():
+    """Process system args and return a namespace with their values."""
+    parser = argparse.ArgumentParser(description='List blob objects present in a git repository.')
+    group = parser.add_argument_group("Select output")
+    group.add_argument('--trees', action="store_true",
+                       help="List trees instead of blobs")
+    group.add_argument('--commits', action="store_true",
+                       help="List commits instead of blobs")
+    fgroup = parser.add_argument_group("Format output")
+    fgroup.add_argument('--ids', action="store_true",
+                        help="Print git ID")
+    return parser.parse_args()
+
+
+def get_str_output(program_and_args, encoding=None):
+    """Like :py:func:`subprocess.check_output`, but returns the output as
+    a :py:class:`str` rather than :py:class:`bytes`.
+
+    :param list program_and_args: list of the program to be executed
+        and any arguments to be passed to it. The call should *not*
+        require a shell (see `shell` argument to
+        :py:meth:`subprocess.POpen`)
+
+    :param str encoding: specifies the encoding expected for the
+        output; if omitted, defaults to the result of
+        :py:func:`sys.getdefaultencoding`.
+
+    """
+    the_encoding = sys.getdefaultencoding() if encoding is None else encoding
+    return subprocess.check_output(program_and_args).decode(the_encoding)
+
+
+def git_object_type(sha1):
+    """:returns: the type of the object with hash `sha1`
+       :rtype: str
+
+    """
+    return get_str_output(["git", "cat-file", "-t", sha1]).replace("\n", "")
+
+
+def main(opts):
+    trees = set()  # each item is a tuple (hash, directory)
+    commits = set()  # each item is a tuple (hash, '')
+    blobs = set()  # each item is a tuple (hash, filename)
+    # handy way to get set from objet type
+    obj_sets = {"tree": trees, "commit": commits, "blob": blobs}
+
+    all_objects_out = get_str_output(["git", "rev-list", "--objects", "--all"])
+
+    for line in all_objects_out.split("\n"):
+        parts = line.split(" ")
+        if parts[0]:  # why do I get an empty line?
+            typ = git_object_type(parts[0])
+            # join to handle spaces in file names
+            obj_sets[typ].add((parts[0], " ".join(parts[1:])))
+
+    if opts.trees:
+        for item in trees:
+            print("{}\t{}".format(*item) if opts.ids else item[1])
+    elif opts.commits:
+        for item in commits:
+            print(item[0])
+    else:
+        for item in blobs:
+            print("{}\t{}".format(*item) if opts.ids else item[1])
+
+
+if __name__ == '__main__':
+    main(get_options())
