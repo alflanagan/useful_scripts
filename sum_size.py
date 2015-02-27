@@ -1,18 +1,13 @@
-#!/usr/bin/env python
-from __future__ import division
+#!/usr/bin/env python3
 """
-$Id$
-$URL$
+Given a list of file nums, sum the sizes of the files, print result.
+
 """
 
 import sys
 import os
 
-"""
-Given a list of file nums, sum the sizes of the files, print result.
-"""
-
-total = 0L
+total = 0
 
 if len(sys.argv) < 2:
     sys.stderr.write('Usage: {0} file_list\n'.format(os.path.basename(sys.argv[0])))
@@ -29,6 +24,6 @@ for file_arg in sys.argv[1:]:
 
 print(total)
 if total > 1024:
-    print("{0:2} KB".format(total / 1024))
+    print("{0:2,.3f} KB".format(total / 1024))
 if total > 1024 * 1024:
-    print("{0:2} MB".format(total / (1024 * 1024)))
+    print("{0:2,.3f} MB".format(total / (1024 * 1024)))
