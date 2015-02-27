@@ -3,8 +3,17 @@
 # archives
 *.gz
 *.tgz
+*.xz
 # my local git install (CentOS6 way behind)
-git*
+# can't do this since I named scripts git-...
+# git*
+git
+git-cvsserver
+git-receive-pack
+git-shell
+git-upload-archive
+git-upload-pack
+gitk
 # compiled python
 *.pyo
 *.pyc
