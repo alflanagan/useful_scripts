@@ -16,3 +16,10 @@ cask
 catz
 # squirrel-SQL
 squirrel*
+# CentOS support script
+getinfo.sh
+learnyounode
+evm
+filezilla
+bfg
+css-minify.pl
