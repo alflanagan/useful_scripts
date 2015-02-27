@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+
+from subprocess import check_call
+
+TEMP_STORAGE = "/dev/shm/gittmp"
+"""location of temporary checkout of repo. Putting this in tmpfs is way faster"""
+
+
+def main(branches, filter_expr):
+    """Use git filter-branch to remove elements from each branch in `branches` according to
+    `filter-expr`.
+
+    """
+    git_params = ["filter-branch", "-d", TEMP_STORAGE, "--tree-filter",
+                  filter_expr, "--prune-empty", "--force"]
+    git_params.extend(branches)
+
+    print("calling git {} {} '{}' {} '{}' {} {} ".format(*git_params)
+          + " ".join(branches))
+    check_call(["git"] + git_params + branches)
+    check_call("git reflog expire --expire=now --all".split(" "))
+    check_call("git gc --prune=now --aggressive".split(" "))
+
+
+if __name__ == '__main__':
+    import sys
+    print("Enter one or more branches to filter, seperated by spaces.")
+    branches = sys.stdin.readline().replace("\n", "").split(" ")
+    assert isinstance(branches, list) and len(branches) > 0
+    print("Enter a filter expression (shell script, etc) on one line")
+    expr = sys.stdin.readline().replace("\n", "")
+    main(branches, expr)
+
+# Local Variables:
+# python-indent-offset: 4
+# fill-column: 100
+# indent-tabs-mode: nil
+# End:
