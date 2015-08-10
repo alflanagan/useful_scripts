@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# -*- coding: utf-8-unix -*-
 #above more for documentation, since normally this file must be sourced
 
 #put some useful terminal escapes in shell variables
@@ -12,7 +13,7 @@ TERM_UL_OFF=$(tput -T xterm rmul)
 #a lot of useful bash functions
 bldpath() {
     #bldpath VARNAME DIR [before|after]
-    #VARNAME names an environment variable formatted like PATH (e.g. PATH, 
+    #VARNAME names an environment variable formatted like PATH (e.g. PATH,
     #  LD_LIBRARY_PATH, PYTHONPATH)
     #DIR is a directory which will be added to the variable named by VARNAME
     #but only if it's not already present
@@ -65,7 +66,7 @@ pathmunge() {
 	return 2
     fi
     bldpath PATH "$1" "$2"
-} 
+}
 
 is_in_path() {
     local DIR="$1"
@@ -93,7 +94,7 @@ manmunge() {
         return 1
     fi
     bldpath MANPATH "$1" "$2"
-} 
+}
 
 ldlibmunge() {
     if [[ $# -lt 1 ]]; then
@@ -108,7 +109,7 @@ ldlibmunge() {
 myps() {
 #list processes running under current user's name, except for some system stuff
 #cat causes whole line to print, wrapped
-    ps -fu $(whoami) | cat
+    ps -fu $(whoami) | grep -v -e '/usr/libexec/' -e 'dbus' -e 'gnome-pty-helper' -e 'ibus-daemon' -e 'keyring-daemon' | cat
 }
 
 fixldpath() {
@@ -404,8 +405,8 @@ curl_get_missing() {
     fi
 }
 
-which() {
-#TODO: won't find executable file if function or alias exists
+xwhich() {
+##TODO: won't find executable file if function or alias exists
     (alias; declare -f) | /usr/bin/which --tty-only --read-alias --read-functions --show-tilde --show-dot "$@"
 }
 
@@ -508,7 +509,3 @@ comp() {
     _command_offset 0
     echo ${COMPREPLY[@]}
 }
-
-# Local Variables:
-# coding: utf-8-unix
-# End:
