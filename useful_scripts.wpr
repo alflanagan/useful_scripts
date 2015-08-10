@@ -11,3 +11,6 @@ proj.directory-list = [{'dirloc': loc('.'),
                         'recursive': True,
                         'watch_for_changes': True}]
 proj.file-type = 'shared'
+proj.launch-config = {loc('report_class_hier.py'): ('project',
+        (u'/usr/local/lib/python3.4/site-packages/pip/baseparser.py',
+         ''))}
