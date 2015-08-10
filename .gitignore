@@ -4,36 +4,38 @@
 *.gz
 *.tgz
 *.xz
-# my local git install (CentOS6 way behind)
-# can't do this since I named scripts git-...
-# git*
-git
-git-cvsserver
-git-receive-pack
-git-shell
-git-upload-archive
-git-upload-pack
-gitk
 # compiled python
 *.pyo
 *.pyc
 # other local GNU utilities
 install-info
-# emacs project management
+# symbolic links
 cask
+git-ls-all
 # an actual compiled executable
 catz
 # squirrel-SQL
 squirrel*
 # CentOS support script
 getinfo.sh
-learnyounode
-evm
-filezilla
-bfg
-css_minify.pl
+# my scripts which are archived elsewhere or not worth adding.
+connect_pc
+django_view
 e
 ef
-django_view
-tkman.py
 set_up_git
+# third-party programs
+bfg
+css_minify.pl
+evm
+filezilla
+foreman
+learnyounode
+lein
+mplab
+pwdgen
+rackup
+thor
+tkman.py
+unicorn
+unicorn_rails
