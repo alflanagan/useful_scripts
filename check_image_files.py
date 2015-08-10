@@ -45,8 +45,19 @@ def grep_files(pattern, filespec, directory="."):
             grep_cmd = ("find . -maxdepth 1 -name '{}' -print0 | xargs --null grep '{}'"
                         "".format(filespec, pattern))
             # print("executing {}".format(grep_cmd))
-            subprocess.check_call(grep_cmd, stdout=tmpfil, shell=True)
+
+            # xargs exits with non-zero if any command invocation
+            # returned non-zero, but grep returns 1 if it doesn't find
+            # a matching line (although not an error in this
+            # case). So, can't use subprocess.check_call().  We
+            # probably should fail any time grep returns 2 or find
+            # exits with non-zero, but would need a shell function and
+            # possibly voodoo to do that. (or separate calls of find
+            # and grep, which would affect performance at least).
+
+            subprocess.call(grep_cmd, stdout=tmpfil, shell=True)
         except subprocess.CalledProcessError:
+            # not sure we can get here; see previous comment
             err_msg("find + xargs failed; attempting to use plain grep.")
             try:
                 grep_cmd = "grep '{0}' {1}".format(pattern, filespec)
