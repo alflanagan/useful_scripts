@@ -119,8 +119,8 @@ def check_files_in_dir(dir_to_check, print_missing, print_totals):
 
     if missing:
         if print_totals:
-            print("Found {} image file references, but {} are missing!"
-                  "".format(len(img_refs), len(missing)))
+            print("Found {} image file references, but {} {} missing!"
+                  "".format(len(img_refs), len(missing), "are" if len(missing) > 1 else "is"))
         if print_missing:
             for fname in missing:
                 print(fname)
