@@ -12,6 +12,6 @@ else
     #xmllint "$1" --noout --dtdvalid http://www.iptc.org/std/NITF/3.4/specification/dtd/nitf-3-4.dtd
     for FNAME in "$@"
     do
-        xmllint "$1" --noout --dtdvalid ${DTD_DOC}
+        xmllint "${FNAME}" --noout --dtdvalid ${DTD_DOC}
     done
 fi
