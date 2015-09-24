@@ -12,78 +12,81 @@ TERM_UL_OFF=$(tput -T xterm rmul)
 
 #a lot of useful bash functions
 bldpath() {
-    #bldpath VARNAME DIR [before|after]
-    #VARNAME names an environment variable formatted like PATH (e.g. PATH,
-    #  LD_LIBRARY_PATH, PYTHONPATH)
-    #DIR is a directory which will be added to the variable named by VARNAME
-    #but only if it's not already present
-    #no validation is done on DIR: don't care if it doesn't exist
-    #DIR is added to the end of the variable unless third argument is "before"
-    local -r VARNAME="$1"
-    local -r DIR="$2"
-    if [[ -n $3 ]]; then
-        #force lowercase
-        local -r -l POS=$3
+  #bldpath VARNAME DIR [before|after]
+  #VARNAME names an environment variable formatted like PATH (e.g. PATH,
+  #  LD_LIBRARY_PATH, PYTHONPATH)
+  #DIR is a directory which will be added to the variable named by VARNAME
+  #but only if it's not already present
+  #no validation is done on DIR: don't care if it doesn't exist
+  #DIR is added to the end of the variable unless third argument is "before"
+  local -r VARNAME="$1"
+  local -r DIR="$2"
+  if [[ -n $3 ]]; then
+    #force lowercase
+    local -r -l POS=$3
+  else
+    local -r POS=after
+  fi
+
+  if [[ ${POS} != before && ${POS} != after ]]; then
+    echo "Optional third argument must be \"before\" or \"after\" (default is \"after\")."
+    return 1
+  fi
+
+  #local -r SHOW=echo  #uncomment this for debug output
+  local -r SHOW=:
+  #BRACKETED_PATH makes case statement simpler
+  local -r BRACKETED_PATH=":${!VARNAME}:"
+  case "${BRACKETED_PATH}" in
+    *:${DIR}:*)
+    ${SHOW} "${DIR} already in ${VARNAME}, doing nothing."
+    ;;
+    ::)
+    ${SHOW} "${VARNAME} not set, setting it to ${DIR}"
+    export ${VARNAME}=${DIR};;
+    *)
+    ${SHOW} "${DIR} not in ${VARNAME}, adding it ${POS} existing value."
+    if [[ ${POS} == after ]]; then
+      export ${VARNAME}="${!VARNAME}":"${DIR}"
     else
-        local -r POS=after
-    fi
-
-    if [[ ${POS} != before && ${POS} != after ]]; then
-        echo "Optional third argument must be \"before\" or \"after\" (default is \"after\")."
-        return 1
-    fi
-
-    #local -r SHOW=echo  #uncomment this for debug output
-    local -r SHOW=:
-    #BRACKETED_PATH makes case statement simpler
-    local -r BRACKETED_PATH=":${!VARNAME}:"
-    case "${BRACKETED_PATH}" in
-        *:${DIR}:*)
-            ${SHOW} "${DIR} already in ${VARNAME}, doing nothing."
-            ;;
-        ::)
-            ${SHOW} "${VARNAME} not set, setting it to ${DIR}"
-            export ${VARNAME}=${DIR};;
-        *)
-            ${SHOW} "${DIR} not in ${VARNAME}, adding it ${POS} existing value."
-            if [[ ${POS} == after ]]; then
-                export ${VARNAME}="${!VARNAME}":"${DIR}"
-            else
-                export ${VARNAME}="${DIR}":"${!VARNAME}"
-            fi;;
-    esac
+      export ${VARNAME}="${DIR}":"${!VARNAME}"
+    fi;;
+  esac
 }
 
 pathmunge() {
-    if [[ $# -eq 0 ]]; then
-        echo "${FUNCNAME} dir_path [before|after]"
-        echo "     adds dir_path to PATH variable"
-        echo "     adds to end unless 'before' specified."
-        return 1
-    fi
-    if [[ ! -d "$1" ]]; then
-        echo "${FUNCNAME} ERROR: path not found [$1]" >&2
-	return 2
-    fi
-    bldpath PATH "$1" "$2"
+  if [[ $# -eq 0 ]]; then
+    echo "${FUNCNAME} dir_path [before|after]"
+    echo "     adds dir_path to PATH variable"
+    echo "     adds to end unless 'before' specified."
+    return 1
+  fi
+  if [[ ! -d "$1" ]]; then
+    echo "${FUNCNAME} ERROR: path not found [$1]" >&2
+    return 2
+  fi
+  bldpath PATH "$1" "$2"
+  # changes to PATH may not be respected for cached command lookups
+  hash -r
 }
 
 is_in_path() {
-    local DIR="$1"
-    #extra colons simplify case
-    case :${PATH}: in
-        *:${DIR}:*)
-            return 1;;
-        *)
-            return 0;;
-    esac
+  local DIR="$1"
+  #extra colons simplify case
+  case :${PATH}: in
+    *:${DIR}:*)
+    return 1;;
+    *)
+    return 0;;
+  esac
 }
 
 #TODO: generalize to take path variable name as param
 pathrm() {
-    local NEW_PATH=$(echo ${PATH} | tr ':' '\n' | grep -v "^$1$" | grep -v '^$' | tr '\n' ':')
-    #above *might* leave a trailing colon, kill it
-    export PATH=${NEW_PATH%:}
+  local NEW_PATH=$(echo ${PATH} | tr ':' '\n' | grep -v "^$1$" | grep -v '^$' | tr '\n' ':')
+  #above *might* leave a trailing colon, kill it
+  export PATH=${NEW_PATH%:}
+  hash -r
 }
 
 manmunge() {
@@ -242,14 +245,14 @@ find_no_svn_igrep() {
 }
 
 execsql() {
-    if  [[ $# -eq 0 ]]; then
-        echo "${FUNCNAME} ${TERM_UL_ON}sql_file${TERM_UL_OFF} ${TERM_UL_ON}additional_psql_options${TERM_UL_OFF}"
-        echo "    Call psql to execute ${TERM_UL_ON}sql_file${TERM_UL_OFF} in database netinformer as user apache."
-    else
-	local SQL_FILE=$1
-	shift
-	psql -f ${SQL_FILE} --db=netinformer --user=apache $*
-    fi
+  if  [[ $# -eq 0 ]]; then
+    echo "${FUNCNAME} ${TERM_UL_ON}sql_file${TERM_UL_OFF} ${TERM_UL_ON}additional_psql_options${TERM_UL_OFF}"
+    echo "    Call psql to execute ${TERM_UL_ON}sql_file${TERM_UL_OFF} in database netinformer as user apache."
+  else
+    local SQL_FILE=$1
+    shift
+    psql -f ${SQL_FILE} --db=netinformer --user=apache $*
+  fi
 }
 
 domysql() {
@@ -265,12 +268,12 @@ HERE
 }
 
 execmysql() {
-    if  [[ $# -eq 0 ]]; then
-        echo "${FUNCNAME} ${TERM_UL_ON}sql_file${TERM_UL_OFF}"
-        echo "    Execute SQL statements in ${TERM_UL_ON}sql_file${TERM_UL_OFF} with mysql."
-    else
-	mysql -u root -p < ${1}
-    fi
+  if  [[ $# -eq 0 ]]; then
+    echo "${FUNCNAME} ${TERM_UL_ON}sql_file${TERM_UL_OFF}"
+    echo "    Execute SQL statements in ${TERM_UL_ON}sql_file${TERM_UL_OFF} with mysql."
+  else
+    mysql -u root -p < ${1}
+  fi
 }
 
 lgv() {
@@ -451,42 +454,42 @@ view_html() {
 }
 
 dbshell() {
-    if [[ -f manage.py ]]; then
-        python manage.py dbshell
-    elif [[ -f ../manage.py ]]; then
-        python ../manage.py dbshell
-    else
-        echo "Can't start dbshell; where is manage.py?" >&2
-    fi
+  if [[ -f manage.py ]]; then
+    python manage.py dbshell
+  elif [[ -f ../manage.py ]]; then
+    python ../manage.py dbshell
+  else
+    echo "Can't start dbshell; where is manage.py?" >&2
+  fi
 }
 
 truepath () {
-    # provide a more memorable name
-    readlink -f "$@"
+  # provide a more memorable name
+  readlink -f "$@"
 }
 
 cs() {
-    python manage.py collectstatic --noinput;
+  python manage.py collectstatic --noinput;
 }
 
 chrome() {
-    /usr/bin/chrome >~/log/chrome.log 2>&1 &
+  /usr/bin/chrome >~/log/chrome.log 2>&1 &
 }
 
 firefox() {
-    ~/opt/bin/firefox > ~/log/firefox.log 2>&1 &
+  ~/opt/bin/firefox > ~/log/firefox.log 2>&1 &
 }
 
 ecompile() {
-    emacs --batch -f batch-byte-compile "$@"
+  emacs --batch -f batch-byte-compile "$@"
 }
 
 columns() {
-    if [[ $# -gt 0 ]]; then
-        pr -t -T -$1
-    else
-        pr -t -T
-    fi
+  if [[ $# -gt 0 ]]; then
+    pr -t -T -$1
+  else
+    pr -t -T
+  fi
 }
 
 # generate a list of completion words for a command
