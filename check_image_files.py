@@ -11,9 +11,27 @@ import sys
 import re
 import subprocess
 import html
+import argparse
 
 IMG_REF_RE = r'<media-reference[^>]+source="([^"]*)".*?/>'
 IMG_REF = re.compile(IMG_REF_RE)
+
+
+def get_args():
+    """Process command-line options, return options object."""
+    desc = """
+Match NITF files in a directory with image files by references in <media> tags.
+
+Reports images referenced but not present, and present but not referenced."""
+
+    parser = argparse.ArgumentParser(description=desc)
+
+    parser.add_argument('directory', help="The name of a directory to scan")
+    parser.add_argument('--quiet', action="store_true", help="Report *only* file names")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--missing', action="store_true", help="List names of missing images")
+    group.add_argument('--extra', action="store_true", help="List names of images not referenced")
+    return parser.parse_args()
 
 
 def err_msg(mesg):
@@ -82,88 +100,77 @@ def test_grep_files():
     sys.exit(1)
 
 
-def usage():
-    """Display usage message and exit."""
-    sys.stderr.write("""Usage: {0} directory [--missing [--quiet]]
-     Reports the number of images referenced by NITF files in the directory, and
-     how many of those files are actually present.
-     If --missing is present, prints list of image files not found.
-     If --quiet is added, ONLY prints file names.
-""".format(os.path.basename(sys.argv[0])))
-    sys.exit(1)
+def check_files_in_dir(dir_to_check, print_missing, print_extra, be_quiet):
+    """Scans files in dir_to_check, prints output.
 
+    Prints counts of missing and extra images, unless be_quiet == True
 
-def check_files_in_dir(dir_to_check, print_missing, print_totals):
-    files = set(os.listdir(dir_to_check))
+    Prints list of missing files, if print_missing == True
+
+    Prints list of extra (unreferenced) files, if print_extra == True
+
+    """
+    files = set([fname for fname in os.listdir(dir_to_check) if not fname.endswith('.xml')])
 
     img_refs = set()
 
-    if print_totals:
+    if not be_quiet:
         print("grepping XML files...")
 
     # it turns out that grep is WAY faster than iterating lines in a file and using re module
     matched_lines = grep_files('<media-reference', '*.xml', dir_to_check)
     for line in matched_lines:
         assert isinstance(line, str)
-        # unfortunately, we don't have each <media-reference tag on separate line
-        # make list from callable
-        matches = list(IMG_REF.finditer(line))
+        # unfortunately, we don't have each <media-reference> tag on separate line
+        matches = IMG_REF.findall(line)
         for media_ref_match in matches:
-            if not media_ref_match.groups()[0].endswith('.flv'):
-                ifilename = html.unescape(media_ref_match.group(1))
-                img_refs.add(ifilename)
-    #    if not matches:
-    #        print("No match: '{0}'".format(line))
+            # if not media_ref_match.endswith('.flv'):
+            ifilename = html.unescape(media_ref_match)
+            img_refs.add(ifilename)
 
     missing = img_refs - files
 
     if missing:
-        if print_totals:
-            print("Found {} image file references, but {} {} missing!"
+        if not be_quiet:
+            print("Found {:,} image file references, but {:,} {} missing!"
                   "".format(len(img_refs), len(missing), "are" if len(missing) > 1 else "is"))
         if print_missing:
             for fname in missing:
                 print(fname)
-        sys.exit(2)
     else:
-        if print_totals:
+        if not be_quiet:
             print("All {} image files accounted for.".format(len(img_refs)))
 
+    extras = files - img_refs
 
-def check_all():
+    if extras:
+        if not be_quiet:
+            if len(extras) == 1:
+                print("Found 1 non-XML file that is not referenced in NITF files.")
+            else:
+                print("Found {:,} non-XML files that are not referenced in NITF files."
+                      "".format(len(extras)))
+        if print_extra:
+            for fname in extras:
+                print(fname)
+    elif not be_quiet:
+        print("There are no non-XML files which are not referenced in the NITF files.")
+
+
+def check_all(args):
     """Main procedure: process command line, grep NITF files, report results."""
     # defaults
-    print_missing = False
-    print_totals = True
 
-    argset = set(sys.argv[1:])
+    if args.quiet and not (args.missing or args.extra):
+        err_msg("Ignoring --quiet parameter; only meaningful with --extra or --missing.")
+        args.quiet = False
 
-    if '--missing' in argset:
-        print_missing = True
-        argset -= set(['--missing'])
+    if not os.path.exists(args.directory):
+        err_msg("Directory {} does not exist!".format(args.directory))
+        sys.exit(2)
 
-    if '--quiet' in argset:
-        if print_missing:
-            print_totals = False
-        else:
-            err_msg("Ignoring --quiet parameter; only meaningful if --missing also given.")
-        argset -= set(['--quiet'])
-
-    if len(argset) < 1:
-        usage()
-
-    dir_to_check = argset.pop()
-
-    if len(argset):
-        err_msg("Unrecognized arguments!")
-        usage()
-
-    if not os.path.exists(dir_to_check):
-        err_msg("Directory {} does not exist!".format(dir_to_check))
-        usage()
-
-    check_files_in_dir(dir_to_check, print_missing, print_totals)
+    check_files_in_dir(args.directory, args.missing, args.extra, args.quiet)
 
 
 if __name__ == '__main__':
-    check_all()
+    check_all(get_args())
