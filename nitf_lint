@@ -13,5 +13,8 @@ else
     for FNAME in "$@"
     do
         xmllint "${FNAME}" --noout --dtdvalid ${DTD_DOC}
+        if grep -q '<title></title>' "${FNAME}" ; then
+            echo "${FNAME} has no title." >&2
+        fi
     done
 fi
