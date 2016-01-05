@@ -1,6 +1,7 @@
-#!/usr/bin/env python
-#$Id$
-#$URL$
+#!/usr/bin/env python3
+# -*- coding:utf-8 -*-
+
+"""Script to find sparse-stored files in ext2/3/4 filesystems"""
 
 #find sparse files, files that report a larger size than is actually stored
 #on disk.
@@ -9,9 +10,6 @@
 #      2 -rw-r--r--+ 1 flanaganl eng         1011 Nov  9 12:35 TypeInfo.cpp
 #      2 -rw-r--r--+ 1 flanaganl eng          786 Oct  2  2009 c++0xthings.cpp
 #4249326 -rw-------+ 1 flanaganl eng 344029454336 Apr  6 14:28 core.31047
-
-"""Script to find sparse-stored files in ext2/3/4 filesystems"""
-from __future__ import print_function, unicode_literals  # This script requires Python 2.6 or later!
 
 import os
 import sys
@@ -29,7 +27,7 @@ def check_dir(directory_name):
             true_size = sresult.st_blocks * 1024
             if true_size < sresult.st_size:
                 print(BS + "file {0} reports size {1}, but is really {2}"
-                        "".format(filename, sresult.st_size, true_size))
+                      "".format(filename, sresult.st_size, true_size))
 
 
 def recurse_check_dir(top_dir, spindex):
