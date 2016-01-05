@@ -301,7 +301,7 @@ every() {
     if [[ $# -lt 3 ]]; then
         echo "Usage: ${FUNCNAME} _seconds_ do _command_"
         echo "       where _seconds_ is time, and _command_ is a shell command"
-        echo "       note: quoting arguments as part of _command_ (to combine multiple words) does not work"
+        echo "       note: if _command_ contains multiple commands or redirection, quote it"
         return 1
     fi
     local secs=$1
@@ -362,7 +362,63 @@ h2d() {
     local hexnum
     typeset -u hexnum   # force uppercase
     hexnum=$1
+    # TODO: check for valid digits
     dc -e "16i${hexnum}p"
+}
+
+# tempting to create h2o(), but would it ever get used?
+
+o2d() {
+  if [[ $# -lt 1 ]]; then
+      echo "Usage: ${FUNCNAME} octal_number"
+      echo "       converts octal_number from octal to integer, prints result."
+      return 1
+  fi
+  local octnum
+  typeset -i octnum
+  octnum=$1
+  # TODO: check for digit > 7
+  if [[ ${octnum} -eq 0 ]]; then
+    echo "ERROR: input not a number, or 0"
+    o2d
+  else
+    dc -e "8i${octnum}p"
+  fi
+}
+
+d2h() {
+  local INPUT
+  typeset -i INPUT
+  if [[ $# -lt 1 ]]; then
+      echo "Usage: ${FUNCNAME} number"
+      echo "       converts decimal number to hexadecimal, prints result."
+      return 1
+  fi
+  INPUT=${1}
+  if [[ ${INPUT} -eq 0 ]]; then
+    # bad conversion, show help
+    echo "ERROR: input is not number, or is 0"
+    d2h
+  else
+    dc -e "16o${INPUT}p"
+  fi
+}
+
+d2o() {
+  local INPUT
+  typeset -i INPUT
+  if [[ $# -lt 1 ]]; then
+      echo "Usage: ${FUNCNAME} number"
+      echo "       converts decimal number to octal, prints result."
+      return 1
+  fi
+  INPUT=${1}
+  if [[ ${INPUT} -eq 0 ]]; then
+    echo "ERROR: input is not a number, or is 0"
+    d2o
+  else
+    dc -e "8o${INPUT}p"
+  fi
 }
 
 x2d () {
