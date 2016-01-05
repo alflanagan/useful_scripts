@@ -39,3 +39,6 @@ thor
 tkman.py
 unicorn
 unicorn_rails
+check_apm_pkgs.sh
+startvnc
+startvnc.laptop

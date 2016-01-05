@@ -410,17 +410,12 @@ curl_get_missing() {
 
 xwhich() {
 ##TODO: won't find executable file if function or alias exists
-    (alias; declare -f) | /usr/bin/which --tty-only --read-alias --read-functions --show-tilde --show-dot "$@"
-}
-
-wing5() {
-    #verbose causes errors to log, etc.
-    /usr/bin/wing5.1 --verbose "$@" > /home/aflanagan/log/wing5.log 2>&1 &
-    #/usr/bin/wing5.0 "$@" > /home/aflanagan/log/wing5.log 2>&1 &
+    (alias; declare -f) | /usr/bin/which --tty-only --read-alias --read-functions --show-tilde "$@"
 }
 
 wing() {
-    wing5
+    #verbose causes errors to log, etc.
+    /usr/bin/wing5.1 --verbose "$@" > /home/aflanagan/log/wing5.log 2>&1 &
 }
 
 #get list of files in a zip, dropping all info except file names
@@ -473,11 +468,11 @@ cs() {
 }
 
 chrome() {
-  /usr/bin/chrome >~/log/chrome.log 2>&1 &
+  google-chrome >~/log/chrome.log 2>&1 &
 }
 
 firefox() {
-  ~/opt/bin/firefox > ~/log/firefox.log 2>&1 &
+  firefox > ~/log/firefox.log 2>&1 &
 }
 
 ecompile() {
@@ -511,4 +506,14 @@ comp() {
     local COMP_KEY=9
     _command_offset 0
     echo ${COMPREPLY[@]}
+}
+
+atom() {
+    atom-beta "$@"
+}
+
+npm_packages() {
+  # list npm packages without semver
+  # should be a better way to do this
+  npm $* ls --depth=0 | grep -v npm | cut -d' ' -f2 | grep -v /usr | grep -v '^$' | cut -d'@' -f1
 }
