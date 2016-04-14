@@ -1,31 +1,42 @@
 # WingIDE user-specific settings
 *.wpu
+
 # archives
 *.gz
 *.tgz
 *.xz
+
 # compiled python
 *.pyo
 *.pyc
+
 # other local GNU utilities
 install-info
+
 # symbolic links
 cask
 git-ls-all
-# an actual compiled executable
+
+# actual compiled executables
 catz
+pwdgen
+
 # squirrel-SQL
 squirrel*
+
 # CentOS support script
 getinfo.sh
+
 # my scripts which are archived elsewhere or not worth adding.
+check_apm_pkgs.sh
 connect_pc
-django_view
-e
 ef
 set_up_git
+utl_validate.py
+
 # third-party programs
 bfg
+checkbashisms
 css_minify.pl
 evm
 filezilla
@@ -33,12 +44,10 @@ foreman
 learnyounode
 lein
 mplab
-pwdgen
 rackup
+startvnc
+startvnc.laptop
 thor
 tkman.py
 unicorn
 unicorn_rails
-check_apm_pkgs.sh
-startvnc
-startvnc.laptop
