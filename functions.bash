@@ -528,7 +528,8 @@ chrome() {
 }
 
 firefox() {
-  firefox > ~/log/firefox.log 2>&1 &
+  ~/opt/firefox/firefox > ~/log/user-firefox.log 2>&1 &
+  # /usr/bin/firefox > ~/log/firefox.log 2>&1 &
 }
 
 ecompile() {
