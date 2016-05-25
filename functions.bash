@@ -501,7 +501,7 @@ extra() {
 }
 
 view_html() {
-    firefox -new-window file://localhost$(pwd)/"$@" &
+    firefox -no-remote -new-window file://localhost$(pwd)/"$@" &
 }
 
 dbshell() {
@@ -528,7 +528,7 @@ chrome() {
 }
 
 firefox() {
-  ~/opt/firefox/firefox > ~/log/user-firefox.log 2>&1 &
+  ~/opt/firefox/firefox -no-remote "$@" > ~/log/user-firefox.log 2>&1 &
   # /usr/bin/firefox > ~/log/firefox.log 2>&1 &
 }
 
