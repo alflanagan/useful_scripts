@@ -1,4 +1,4 @@
-#!/bin/dash
+#!/usr/bin/env dash
 HOSTS_FILE=~/.ssh/known_hosts
 
 echo "Checking hosts in ${HOSTS_FILE} to see if they are live."
