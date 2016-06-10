@@ -28,3 +28,16 @@ exaggeration.
   * `comp`: do completion expansion for a command, as though hitting
     `tab` on the command line -- useful for scripts
     
+* __file_dupes.py__
+
+  Searches a file directory tree for files that are duplicates
+  (contents are identical). Checks file sizes first, if it finds
+  two or more files with the same size it runs `md5sum` to get
+  a checksum and checks whether the results are identical.
+
+* __dopercent.bash__
+
+  `dopercent.bash NN command...`
+  
+  Randomly executes a command, with probability NN percent. Useful
+  for spot checks, simulations, etc.
