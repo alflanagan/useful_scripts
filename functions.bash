@@ -527,10 +527,12 @@ chrome() {
   google-chrome >~/log/chrome.log 2>&1 &
 }
 
-firefox() {
-  ~/opt/firefox/firefox > ~/log/user-firefox.log 2>&1 &
-  # /usr/bin/firefox > ~/log/firefox.log 2>&1 &
-}
+if [ -x ~/opt/firefox/firefox ]; then
+    firefox() {
+        ~/opt/firefox/firefox > ~/log/user-firefox.log 2>&1 &
+        # /usr/bin/firefox > ~/log/firefox.log 2>&1 &
+    }
+fi
 
 ecompile() {
   emacs --batch -f batch-byte-compile "$@"
