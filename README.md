@@ -42,7 +42,7 @@ exaggeration.
   Randomly executes a command, with probability NN percent. Useful
   for spot checks, simulations, etc.
 
-* __report_class_heir.py__
+* __report_class_hier.py__
 
   Handy script to scan one or more Python source files and report
   classes that are defined in them, with the parent-child 
