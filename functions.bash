@@ -501,7 +501,7 @@ extra() {
 }
 
 view_html() {
-    firefox -new-window file://localhost$(pwd)/"$@" &
+    firefox -no-remote -new-window file://localhost$(pwd)/"$@" &
 }
 
 dbshell() {
