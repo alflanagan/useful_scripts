@@ -260,7 +260,7 @@ domysql() {
         echo "${FUNCNAME} ${TERM_UL_ON}db_name${TERM_UL_OFF} ${TERM_UL_ON}sql_statement${TERM_UL_OFF}"
         echo "    Execute ${TERM_UL_ON}sql_statement${TERM_UL_OFF} with mysql using database ${TERM_UL_ON}db_name${TERM_UL_OFF}."
     else
-	mysql -u root -p <<HERE
+        mysql -u root -p <<HERE
 use ${1}
 ${2}
 HERE
@@ -501,7 +501,17 @@ extra() {
 }
 
 view_html() {
-    firefox -no-remote -new-window file://localhost$(pwd)/"$@" &
+    local FFOX=~/opt/firefox/firefox
+    case "$@" in
+        /*)
+            echo ${FFOX} --no-remote --new-window file://localhost"$@" &
+            ${FFOX} --no-remote --new-window file://localhost"$@" &
+            ;;
+        *)
+            echo ${FFOX} --no-remote --new-window file://localhost$(pwd)/"$@" &
+            ${FFOX} --no-remote --new-window file://localhost$(pwd)/"$@" &
+            ;;
+    esac
 }
 
 dbshell() {
@@ -527,10 +537,29 @@ chrome() {
   google-chrome >~/log/chrome.log 2>&1 &
 }
 
-if [ -x ~/opt/firefox/firefox ]; then
+# set up synonym for for firefox if user version present
+# prefer firefox-dev if present
+if [ -x ~/opt/firefox-dev/firefox ]; then
     firefox() {
-        ~/opt/firefox/firefox > ~/log/user-firefox.log 2>&1 &
-        # /usr/bin/firefox > ~/log/firefox.log 2>&1 &
+        local FFOX=~/opt/firefox-dev/firefox
+        local FLOG=~/log/user-firefox-dev.log
+
+        if [[ $1 == --help ]]; then
+            ${FFOX} --help
+        else
+            ${FFOX} --no-remote "$@" > ${FLOG} 2>&1 &
+        fi
+    }
+elif [ -x ~/opt/firefox/firefox ]; then
+    firefox() {
+        local FFOX=~/opt/firefox/firefox
+        local FLOG=~/log/user-firefox.log
+
+        if [[ $1 == --help ]]; then
+            ${FFOX} --help
+        else
+            ${FFOX} --no-remote "$@" > ${FLOG} 2>&1 &
+        fi
     }
 fi
 
