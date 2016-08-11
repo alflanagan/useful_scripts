@@ -469,9 +469,14 @@ xwhich() {
     (alias; declare -f) | /usr/bin/which --tty-only --read-alias --read-functions --show-tilde "$@"
 }
 
-wing() {
+wing5() {
     #verbose causes errors to log, etc.
-    /usr/bin/wing5.1 --verbose "$@" > /home/aflanagan/log/wing5.log 2>&1 &
+    /usr/bin/wing5.1 --verbose "$@" > ${HOME}/log/wing5.log 2>&1 &
+}
+
+wing6() {
+    #verbose causes errors to log, etc.
+    /usr/bin/wing6.0 --verbose "$@" > ${HOME}/log/wing6.log 2>&1 &
 }
 
 #get list of files in a zip, dropping all info except file names
