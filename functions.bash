@@ -12,62 +12,58 @@ TERM_UL_OFF=$(tput -T xterm rmul)
 
 #a lot of useful bash functions
 bldpath() {
-  #bldpath VARNAME DIR [before|after]
-  #VARNAME names an environment variable formatted like PATH (e.g. PATH,
-  #  LD_LIBRARY_PATH, PYTHONPATH)
-  #DIR is a directory which will be added to the variable named by VARNAME
-  #but only if it's not already present
-  #no validation is done on DIR: don't care if it doesn't exist
-  #DIR is added to the end of the variable unless third argument is "before"
-  local -r VARNAME="$1"
-  local -r DIR="$2"
-  if [[ -n $3 ]]; then
-    #force lowercase
-    local -r -l POS=$3
-  else
-    local -r POS=after
-  fi
+	# bldpath VARNAME DIR [before|after]
+	# VARNAME names an environment variable formatted like PATH (e.g. PATH,
+	#   LD_LIBRARY_PATH, PYTHONPATH)
+	# DIR is a directory which will be added to the variable named by VARNAME
+	# but only if it's not already present
+	# no validation is done on DIR: don't care if it doesn't exist
+	# DIR is added to the end of the variable unless third argument is "before"
+	local -r VARNAME="$1" DIR="$2"
+	local -l POS=after
+	[[ -n "$3" ]] && POS="$3"
 
-  if [[ ${POS} != before && ${POS} != after ]]; then
-    echo "Optional third argument must be \"before\" or \"after\" (default is \"after\")."
-    return 1
-  fi
+	[[ ${POS} == before || ${POS} == after ]] || {
+		echo 'Optional third argument must be "before" or "after" (default is "after").'
+		return 1
+	}
 
-  #local -r SHOW=echo  #uncomment this for debug output
-  local -r SHOW=:
-  #BRACKETED_PATH makes case statement simpler
-  local -r BRACKETED_PATH=":${!VARNAME}:"
-  case "${BRACKETED_PATH}" in
-    *:${DIR}:*)
-    ${SHOW} "${DIR} already in ${VARNAME}, doing nothing."
-    ;;
-    ::)
-    ${SHOW} "${VARNAME} not set, setting it to ${DIR}"
-    export ${VARNAME}=${DIR};;
-    *)
-    ${SHOW} "${DIR} not in ${VARNAME}, adding it ${POS} existing value."
-    if [[ ${POS} == after ]]; then
-      export ${VARNAME}="${!VARNAME}":"${DIR}"
-    else
-      export ${VARNAME}="${DIR}":"${!VARNAME}"
-    fi;;
-  esac
+	#local -r SHOW=echo  #uncomment this for debug output
+	local -r SHOW=:
+	#BRACKETED_PATH makes case statement simpler
+	local -r BRACKETED_PATH=":${!VARNAME}:"
+	case "${BRACKETED_PATH}" in
+		*:${DIR}:*)
+			${SHOW} "${DIR} already in ${VARNAME}, doing nothing."
+			;;
+		::)
+			${SHOW} "${VARNAME} not set, setting it to ${DIR}"
+			export ${VARNAME}=${DIR};;
+		*)
+			${SHOW} "${DIR} not in ${VARNAME}, adding it ${POS} existing value."
+			if [[ ${POS} == after ]]; then
+				export ${VARNAME}="${!VARNAME}":"${DIR}"
+			else
+				export ${VARNAME}="${DIR}":"${!VARNAME}"
+			fi;;
+	esac
 }
 
 pathmunge() {
-  if [[ $# -eq 0 ]]; then
-    echo "${FUNCNAME} dir_path [before|after]"
-    echo "     adds dir_path to PATH variable"
-    echo "     adds to end unless 'before' specified."
-    return 1
-  fi
-  if [[ ! -d "$1" ]]; then
-    echo "${FUNCNAME} ERROR: path not found [$1]" >&2
-    return 2
-  fi
-  bldpath PATH "$1" "$2"
-  # changes to PATH may not be respected for cached command lookups
-  hash -r
+	[[ $# -gt 0 ]] || { cat <<-EOF
+	Usage: ${FUNCNAME} dir_path [before|after]
+		   adds dir_path to PATH variable
+		   adds to end unless 'before' specified.
+	EOF
+						return 1
+						}
+	[[ -d "$1" ]] || {
+		echo "${FUNCNAME} ERROR: path not found [$1]" >&2
+		return 2
+	}
+	bldpath PATH "$1" "$2"
+	# changes to PATH may not be respected for cached command lookups
+	hash -r
 }
 
 is_in_path() {
@@ -83,30 +79,52 @@ is_in_path() {
 
 #TODO: generalize to take path variable name as param
 pathrm() {
-  local NEW_PATH=$(echo ${PATH} | tr ':' '\n' | grep -v "^$1$" | grep -v '^$' | tr '\n' ':')
-  #above *might* leave a trailing colon, kill it
-  export PATH=${NEW_PATH%:}
-  hash -r
+    local paths=() i=0 newpath=""
+
+    #safely split PATH on ':', should handle dirnames with special chars
+    while IFS= read -r -d $':' dname; do
+        paths[i++]="$dname"
+    done < <(echo "$PATH":)
+
+    # build new path with all elements of old path not equal to $1
+    for dname in "${paths[@]}"
+    do
+        if [[ ! -z "${dname}" && "${dname}" != "$1" ]]
+        then
+            if [[ -z "${newpath}" ]]
+            then
+                newpath="${dname}"
+            else
+                newpath="${newpath}:${dname}"
+            fi
+        fi
+    done
+    
+    export PATH="${newpath}"
+    hash -r
 }
 
 manmunge() {
-    if [[ $# -lt 1 ]]; then
-        echo "${FUNCNAME} ${TERM_UL_ON}directory${TERM_UL_OFF} [before|after]"
-        echo "    Adds ${TERM_UL_ON}directory${TERM_UL_OFF} to MANPATH environment variable."
-        echo "    ${TERM_UL_ON}directory${TERM_UL_OFF} is added to end unless 'before' is specified."
-        return 1
-    fi
-    bldpath MANPATH "$1" "$2"
+	if [[ $# -lt 1 ]]; then
+		cat <<-EOF
+	Usage: ${FUNCNAME} ${TERM_UL_ON}directory${TERM_UL_OFF} [before|after]
+			Adds ${TERM_UL_ON}directory${TERM_UL_OFF} to MANPATH environment variable.
+			${TERM_UL_ON}directory${TERM_UL_OFF} is added to end unless 'before' is specified.
+	EOF
+		return 1
+	fi
+	bldpath MANPATH "$1" "$2"
 }
 
 ldlibmunge() {
-    if [[ $# -lt 1 ]]; then
-        echo "${FUNCNAME} ${TERM_UL_ON}directory${TERM_UL_OFF} [before|after]"
-        echo "    Adds ${TERM_UL_ON}directory${TERM_UL_OFF} to LD_LIBRARY_PATH environment variable."
-        echo "    ${TERM_UL_ON}directory${TERM_UL_OFF} is added to end unless 'before' is specified."
-        return 1
-    fi
-    bldpath LD_LIBRARY_PATH "$1" "$2"
+	[[ $# -gt 0 ]] || { cat <<-EOF
+		Usage: ${FUNCNAME} ${TERM_UL_ON}directory${TERM_UL_OFF} [before|after]
+			   Adds ${TERM_UL_ON}directory${TERM_UL_OFF} to LD_LIBRARY_PATH environment variable."
+			   ${TERM_UL_ON}directory${TERM_UL_OFF} is added to end unless 'before' is specified."
+		EOF
+		return -1
+	}
+	bldpath LD_LIBRARY_PATH "$1" "$2"
 }
 
 myps() {
@@ -132,16 +150,17 @@ functions() {
 }
 
 findtextin() {
-    if [[ $# -lt 3 ]]; then
-        echo "Usage: ${FUNCNAME} <start-dir> '<file-pattern>' <search-text>"
-        echo "       Don't forget the single quotes around <file-pattern>"
-        echo '       or the shell will expand it with file names from current directory.'
-        echo '       <start-dir>: top-level directory, it & all subs will be searched.'
-        echo '       <search-text>: text string to search for in each file that matches'
-        echo '                      <file-pattern>'
-        return 1
-    fi
-    find "$1" -name "$2" -print0 | xargs -0 grep "$3"
+	[[ $# -lt 3 ]] && { cat <<-EOF
+		Usage: ${FUNCNAME} <start-dir> '<file-pattern>' <search-text>
+			   Don't forget the single quotes around <file-pattern>
+			   or the shell will expand it with file names from current directory.
+			   <start-dir>: top-level directory, it & all subs will be searched.
+			   <search-text>: text string to search for in each file that matches
+			                  <file-pattern>
+		EOF
+		return 1
+	}
+	find "$1" -name "$2" -exec grep "$3" '{}' +
 }
 
 #appears to be no way to turn off unalias error if alias doesn't exist
@@ -188,12 +207,12 @@ lnall() {
         return 1
     fi
     echo 'finding...'
-    for FILE in $(find "$1" -name "$2")
+    for FILE in $(find "$1" -name "$2" -a ! -type d)
     do
     #this creates extraneous links if FILE is a directory, not sure why
-        cd $(dirname "${FILE}")
+        cd "${FILE%/*}"  # dirname
         echo "$3 --> ${FILE}"
-        ln -s $(basename "${FILE}") "$3"
+        ln -s "${FILE##*/}" "$3"  # basename
         cd -
     done
 }
@@ -201,7 +220,7 @@ lnall() {
 find_no_svn() {
     local find_path=$1
     shift
-    find "${find_path}" ! -iregex '.*\\.svn.*' "$*"
+    find "${find_path}" ! -iregex '.*\\.svn.*' "$@"
 }
 
 find_no_svn_grep() {
@@ -212,24 +231,20 @@ find_no_svn_grep() {
         echo "    ${TERM_UL_ON}path_spec${TERM_UL_OFF} defaults to current directory."
     else
         local DIR="."
-        if [[ -d "$1" ]]; then
-            DIR="$1"
-            shift
-        fi
+        [[ -d "$1" ]] && {DIR="$1"; shift}
 
         local search_term="$1"
         shift
-        echo find ${DIR} $* ! -iregex \'.*/\\.svn/.*\' -print0 \| xargs -0 grep -IH \"${search_term}\"
-        find ${DIR} $* ! -iregex '.*/\.svn/.*' $* -print0 | xargs -0 grep -IH "${search_term}"
+        echo find "${DIR}" -name '.svn' -prune -o "$@" -print0 \| xargs -0 grep -IH \"${search_term}\"
+        find ${DIR} -name '.svn' -prune -o "$@" -print0 | xargs -0 grep -IH "${search_term}"
     fi
 }
 
 find_no_svn_igrep() {
     if  [[ $# -eq 0 ]]; then
-        echo "${FUNCNAME} ${TERM_UL_ON}search_term${TERM_UL_OFF} ${TERM_UL_ON}additional_find_options${TERM_UL_OFF}"
+        echo "${FUNCNAME} ${TERM_UL_ON}[path-spec]${TERM_UL_OFF} ${TERM_UL_ON}search_term${TERM_UL_OFF} ${TERM_UL_ON}additional_find_options${TERM_UL_OFF}"
         echo "    case-insensitive grep selected files for lines containing ${TERM_UL_ON}search_term${TERM_UL_OFF}."
         echo "    ${TERM_UL_ON}additional_find_options${TERM_UL_OFF} are any valid options for find (1)."
-        echo "    Detects when first argument is a directory, and starts from there."
     else
         local DIR="."
         if [[ -d "$1" ]]; then
@@ -239,8 +254,8 @@ find_no_svn_igrep() {
 
         local search_term="$1"
         shift
-        echo find ${DIR} "$*" ! -iregex \'.*/\\.svn/.*\' -exec grep -iIH \"${search_term}\" \'{}\' \\\;
-        find ${DIR} "$*" ! -iregex '.*/\.svn/.*' -exec grep -iIH "${search_term}" '{}' \;
+        echo find "${DIR}" -name '.svn' -prune -o -name '.git' -prune -o \( "$@" \) -exec grep -iIH \"${search_term}\" \'{}\' \\\;
+        find "${DIR}" -name '.svn' -prune -o -name '.git' -prune -o \( "$@" \) -exec grep -iIH "${search_term}" '{}' \;
     fi
 }
 
@@ -249,9 +264,9 @@ execsql() {
     echo "${FUNCNAME} ${TERM_UL_ON}sql_file${TERM_UL_OFF} ${TERM_UL_ON}additional_psql_options${TERM_UL_OFF}"
     echo "    Call psql to execute ${TERM_UL_ON}sql_file${TERM_UL_OFF} in database netinformer as user apache."
   else
-    local SQL_FILE=$1
+    local SQL_FILE="$1"
     shift
-    psql -f ${SQL_FILE} --db=netinformer --user=apache $*
+    psql -f "${SQL_FILE}" --db=netinformer --user=apache "$@"
   fi
 }
 
@@ -272,7 +287,7 @@ execmysql() {
     echo "${FUNCNAME} ${TERM_UL_ON}sql_file${TERM_UL_OFF}"
     echo "    Execute SQL statements in ${TERM_UL_ON}sql_file${TERM_UL_OFF} with mysql."
   else
-    mysql -u root -p < ${1}
+    mysql -u root -p < "${1}"
   fi
 }
 
@@ -334,10 +349,9 @@ with() {
         shift
     fi
     local CMDS="$@"
-    local OLD_DIR=$(pwd)
-    cd ${DIR}
-    eval ${CMDS}
-    cd ${OLD_DIR}
+    pushd "${DIR}" > /dev/null
+    eval "${CMDS}"
+    popd > /dev/null
 }
 
 sum_size() {
@@ -373,13 +387,17 @@ o2d() {
       echo "Usage: ${FUNCNAME} octal_number"
       echo "       converts octal_number from octal to integer, prints result."
       return 1
+  elif [[ $1 == 0 ]]; then
+      # some invalid input sets octnum to 0, so we have to special case actual 0
+      # if we want to catch invalid input
+      echo 0
+      return
   fi
-  local octnum
-  typeset -i octnum
-  octnum=$1
+  
+  declare -i octnum=$1
   # TODO: check for digit > 7
-  if [[ ${octnum} -eq 0 ]]; then
-    echo "ERROR: input not a number, or 0"
+  if (( ${octnum} == 0 )); then
+    echo "ERROR: input not a number" >&2
     o2d
   else
     dc -e "8i${octnum}p"
@@ -387,17 +405,20 @@ o2d() {
 }
 
 d2h() {
-  local INPUT
-  typeset -i INPUT
   if [[ $# -lt 1 ]]; then
       echo "Usage: ${FUNCNAME} number"
       echo "       converts decimal number to hexadecimal, prints result."
       return 1
+  elif [[ $1 == 0 ]]; then
+      # see comment in o2d()
+      echo "0"
+      return
   fi
-  INPUT=${1}
+  declare -i INPUT="$1"
+  
   if [[ ${INPUT} -eq 0 ]]; then
     # bad conversion, show help
-    echo "ERROR: input is not number, or is 0"
+    echo "ERROR: input is not a number" >&2
     d2h
   else
     dc -e "16o${INPUT}p"
@@ -405,16 +426,19 @@ d2h() {
 }
 
 d2o() {
-  local INPUT
-  typeset -i INPUT
   if [[ $# -lt 1 ]]; then
       echo "Usage: ${FUNCNAME} number"
       echo "       converts decimal number to octal, prints result."
       return 1
+  elif [[ $1 == 0 ]]; then
+      # see comment in o2d()
+      echo "0"
+      return
   fi
-  INPUT=${1}
+
+  local -i INPUT="${1}"
   if [[ ${INPUT} -eq 0 ]]; then
-    echo "ERROR: input is not a number, or is 0"
+    echo "ERROR: input is not a number" >&2
     d2o
   else
     dc -e "8o${INPUT}p"
@@ -433,17 +457,17 @@ curl_get() {
         echo "       Retrieves a URL using curl and saves it to a file. Handles errors intelligently"
         return 1
     fi
-    local THE_URL=$1
+    local THE_URL="$1"
     if [[ $# -eq 2 ]]; then
-        local DEST_FILE=$2
+        local DEST_FILE="$2"
     else
-        local DEST_FILE=$(basename ${THE_URL})
+        local DEST_FILE="${THE_URL##*/}"
     fi
     curl -f "${THE_URL}" > "${DEST_FILE}"
     local ERR=$?
     if [[ ${ERR} -ne 0 ]]; then
-        echo "ERROR: curl returned code ${ERR}, file ${DEST_FILE} not retrieved." >&2
-        rm -f ${DEST_FILE}
+        echo "ERROR: curl returned code ${ERR}, file '${DEST_FILE}' not retrieved." >&2
+        rm -f "${DEST_FILE}"
     fi
 }
 
@@ -457,9 +481,9 @@ curl_get_missing() {
     if [[ $# -eq 2 ]]; then
         local DEST_FILE="$2"
     else
-        local DEST_FILE=$(basename "${THE_URL}")
+        local DEST_FILE= "${THE_URL##*/}"
     fi
-    if [[ ! -f ${DEST_FILE} ]]; then
+    if [[ ! -f "${DEST_FILE}" ]]; then
         curl_get "$1" "$2"
     fi
 }
@@ -485,14 +509,7 @@ zip_list() {
 }
 
 endswith() {
-    local VALUE=$1
-    local ENDING=$2
-    [[ ${VALUE%${ENDING}} != ${VALUE} ]]
-    return $?
-}
-
-umbrello() {
-    /usr/bin/umbrello "$@" > ~/log/umbrello.log 2>&1 &
+    [[ "$1" = "*$2" ]]
 }
 
 dtree() {
@@ -502,19 +519,18 @@ dtree() {
 extra() {
     #switch from home directory to parallel directory on /mnt/extra
     #for when I don't want to work through soft links
-    cd $(pwd | sed -e "s|/home/aflanagan|/mnt/extra|")
+    cd ${PWD/\/home\/aflanagan/\/mnt\/extra}
 }
 
 view_html() {
-    local FFOX=~/opt/firefox/firefox
     case "$@" in
         /*)
-            echo ${FFOX} --no-remote --new-window file://localhost"$@" &
-            ${FFOX} --no-remote --new-window file://localhost"$@" &
+            echo firefox --no-remote --new-window file://localhost"$@" "&"
+            firefox --no-remote --new-window file://localhost"$@" &
             ;;
         *)
-            echo ${FFOX} --no-remote --new-window file://localhost$(pwd)/"$@" &
-            ${FFOX} --no-remote --new-window file://localhost$(pwd)/"$@" &
+            echo firefox --no-remote --new-window file://localhost${PWD}/"$@" "&"
+            firefox --no-remote --new-window file://localhost${PWD}/"$@" &
             ;;
     esac
 }
@@ -550,20 +566,20 @@ if [ -x ~/opt/firefox-dev/firefox ]; then
         local FLOG=~/log/user-firefox-dev.log
 
         if [[ $1 == --help ]]; then
-            ${FFOX} --help
+            "${FFOX}" --help
         else
-            ${FFOX} --no-remote "$@" > ${FLOG} 2>&1 &
+            "${FFOX}" --no-remote "$@" > "${FLOG}" 2>&1 &
         fi
     }
 elif [ -x ~/opt/firefox/firefox ]; then
     firefox() {
-        local FFOX=~/opt/firefox/firefox
-        local FLOG=~/log/user-firefox.log
+        local "FFOX"=~/opt/firefox/firefox
+        local "FLOG"=~/log/user-firefox.log
 
         if [[ $1 == --help ]]; then
-            ${FFOX} --help
+            "${FFOX}" --help
         else
-            ${FFOX} --no-remote "$@" > ${FLOG} 2>&1 &
+            "${FFOX}" --no-remote "$@" > "${FLOG}" 2>&1 &
         fi
     }
 fi
@@ -601,12 +617,13 @@ comp() {
     echo ${COMPREPLY[@]}
 }
 
-atom() {
-    atom-beta "$@"
-}
-
 npm_packages() {
   # list npm packages without semver
   # should be a better way to do this
   npm $* ls --depth=0 | grep -v npm | cut -d' ' -f2 | grep -v /usr | grep -v '^$' | cut -d'@' -f1
 }
+
+# Local Variables:
+# indent-tabs-mode: t
+# tab-width: 4
+# End:
