@@ -149,11 +149,13 @@ functions() {
     typeset -f | grep '() $' | sed 's/() //' | sed 's/ //g'
 }
 
+# -----------------------------------------------------------------------------------------------
+#  ENHANCED 'find's
+# -----------------------------------------------------------------------------------------------
+
 findtextin() {
 	[[ $# -lt 3 ]] && { cat <<-EOF
 		Usage: ${FUNCNAME} <start-dir> '<file-pattern>' <search-text>
-			   Don't forget the single quotes around <file-pattern>
-			   or the shell will expand it with file names from current directory.
 			   <start-dir>: top-level directory, it & all subs will be searched.
 			   <search-text>: text string to search for in each file that matches
 			                  <file-pattern>
@@ -162,6 +164,56 @@ findtextin() {
 	}
 	find "$1" -name "$2" -exec grep "$3" '{}' +
 }
+
+find_no_svn() {
+    local find_path="$1"
+    shift
+    find "${find_path}" -name '.svn' -prune -o \( "$@" \)
+}
+
+find_no_svn_grep() {
+    if  [[ $# -eq 0 ]]; then
+        echo "${FUNCNAME} ${TERM_UL_ON}[path-spec]${TERM_UL_OFF} ${TERM_UL_ON}search_term${TERM_UL_OFF} ${TERM_UL_ON}additional_find_options${TERM_UL_OFF}"
+        echo "    grep selected files for lines containing ${TERM_UL_ON}search_term${TERM_UL_OFF}."
+        echo "    ${TERM_UL_ON}additional_find_options${TERM_UL_OFF} are any valid options for find (1)."
+        echo "    ${TERM_UL_ON}path_spec${TERM_UL_OFF} defaults to current directory."
+    else
+        local DIR="."
+        [[ -d "$1" ]] && { DIR="$1"; shift; }
+
+        local search_term="$1"
+        shift
+		local options="-type f"
+		# how to do this space-safe? Build an array?
+		[[ -z "$*" ]] || options="${options} $*"
+		echo find "${DIR}" -name \'.svn\' -prune -o -name \'.git\' -prune -o \( "${options}" \) -exec grep -IH \"${search_term}\" \'{}\' +
+		find "${DIR}" -name '.svn' -prune -name '.git' -prune -o \( "${options}" \) -exec grep -IH "${search_term}" '{}' +
+
+    fi
+}
+
+find_no_svn_igrep() {
+    if  [[ $# -eq 0 ]]; then
+        echo "${FUNCNAME} ${TERM_UL_ON}[path-spec]${TERM_UL_OFF} ${TERM_UL_ON}search_term${TERM_UL_OFF} ${TERM_UL_ON}additional_find_options${TERM_UL_OFF}"
+        echo "    case-insensitive grep selected files for lines containing ${TERM_UL_ON}search_term${TERM_UL_OFF}."
+        echo "    ${TERM_UL_ON}additional_find_options${TERM_UL_OFF} are any valid options for find (1)."
+    else
+        local DIR="."
+        if [[ -d "$1" ]]; then
+            DIR="$1"
+            shift
+        fi
+
+        local search_term="$1"
+        shift
+        echo find "${DIR}" -name '.svn' -prune -o -name '.git' -prune -o \( "$@" \) -exec grep -iIH \"${search_term}\" \'{}\' \\\;
+        find "${DIR}" -name '.svn' -prune -o -name '.git' -prune -o \( "$@" \) -exec grep -iIH "${search_term}" '{}' \;
+    fi
+}
+
+
+# -----------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------
 
 #appears to be no way to turn off unalias error if alias doesn't exist
 unalias ll 2>/dev/null
@@ -215,48 +267,6 @@ lnall() {
         ln -s "${FILE##*/}" "$3"  # basename
         cd -
     done
-}
-
-find_no_svn() {
-    local find_path=$1
-    shift
-    find "${find_path}" ! -iregex '.*\\.svn.*' "$@"
-}
-
-find_no_svn_grep() {
-    if  [[ $# -eq 0 ]]; then
-        echo "${FUNCNAME} ${TERM_UL_ON}[path-spec]${TERM_UL_OFF} ${TERM_UL_ON}search_term${TERM_UL_OFF} ${TERM_UL_ON}additional_find_options${TERM_UL_OFF}"
-        echo "    grep selected files for lines containing ${TERM_UL_ON}search_term${TERM_UL_OFF}."
-        echo "    ${TERM_UL_ON}additional_find_options${TERM_UL_OFF} are any valid options for find (1)."
-        echo "    ${TERM_UL_ON}path_spec${TERM_UL_OFF} defaults to current directory."
-    else
-        local DIR="."
-        [[ -d "$1" ]] && {DIR="$1"; shift}
-
-        local search_term="$1"
-        shift
-        echo find "${DIR}" -name '.svn' -prune -o "$@" -print0 \| xargs -0 grep -IH \"${search_term}\"
-        find ${DIR} -name '.svn' -prune -o "$@" -print0 | xargs -0 grep -IH "${search_term}"
-    fi
-}
-
-find_no_svn_igrep() {
-    if  [[ $# -eq 0 ]]; then
-        echo "${FUNCNAME} ${TERM_UL_ON}[path-spec]${TERM_UL_OFF} ${TERM_UL_ON}search_term${TERM_UL_OFF} ${TERM_UL_ON}additional_find_options${TERM_UL_OFF}"
-        echo "    case-insensitive grep selected files for lines containing ${TERM_UL_ON}search_term${TERM_UL_OFF}."
-        echo "    ${TERM_UL_ON}additional_find_options${TERM_UL_OFF} are any valid options for find (1)."
-    else
-        local DIR="."
-        if [[ -d "$1" ]]; then
-            DIR="$1"
-            shift
-        fi
-
-        local search_term="$1"
-        shift
-        echo find "${DIR}" -name '.svn' -prune -o -name '.git' -prune -o \( "$@" \) -exec grep -iIH \"${search_term}\" \'{}\' \\\;
-        find "${DIR}" -name '.svn' -prune -o -name '.git' -prune -o \( "$@" \) -exec grep -iIH "${search_term}" '{}' \;
-    fi
 }
 
 execsql() {
