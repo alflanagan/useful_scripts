@@ -37,14 +37,25 @@ utl_validate.py
 # third-party programs
 bfg
 checkbashisms
+closure
+closure-latest/
 css_minify.pl
 evm
 filezilla
 foreman
+jekyll
+kramdown
 learnyounode
 lein
+listen
 mplab
 rackup
+rougify
+safe_yaml
+sass
+sass-convert
+scss
+ssh_linuxvm
 startvnc
 startvnc.laptop
 thor

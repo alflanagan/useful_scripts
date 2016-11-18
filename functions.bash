@@ -69,11 +69,11 @@ pathmunge() {
 is_in_path() {
   local DIR="$1"
   #extra colons simplify case
-  case :${PATH}: in
+  case ":${PATH}:" in
     *:${DIR}:*)
-    return 1;;
-    *)
     return 0;;
+    *)
+    return 1;;
   esac
 }
 
@@ -503,12 +503,7 @@ xwhich() {
     (alias; declare -f) | /usr/bin/which --tty-only --read-alias --read-functions --show-tilde "$@"
 }
 
-wing5() {
-    #verbose causes errors to log, etc.
-    /usr/bin/wing5.1 --verbose "$@" > ${HOME}/log/wing5.log 2>&1 &
-}
-
-wing6() {
+wing() {
     #verbose causes errors to log, etc.
     /usr/bin/wing6.0 --verbose "$@" > ${HOME}/log/wing6.log 2>&1 &
 }
