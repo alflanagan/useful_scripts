@@ -17,7 +17,7 @@ sudo () {
 	    [ "$OPTARG" ] && o="$o $OPTARG"
 	fi
     done
-    shift $(( $OPTIND - 1 ))
+    shift $(( OPTIND - 1 ))
 
     # If no arguments are left, it's a simple call to sudo
     if [ $# -ge 1 ]; then
@@ -56,9 +56,9 @@ sudo () {
 	fi
 	# Run the command with verbose options
 	#echo Executing sudo $o -- bash -x -v -c "$c" >&2
-	command sudo $o bash -c "$c"
+	command sudo "$o" bash -c "$c"
     else
 	#echo sudo $o >&2
-	command sudo $o
+	command sudo "$o"
     fi
 }
