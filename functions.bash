@@ -500,7 +500,7 @@ dtree() {
 extra() {
     #switch from home directory to parallel directory on /mnt/extra
     #for when I don't want to work through soft links
-    cd $"{PWD/\/home\/aflanagan/\/mnt\/extra}" || exit 1
+    cd $"{PWD/\/home\/aflanagan/\/mnt\/extra}" || return 1
 }
 
 view_html() {
