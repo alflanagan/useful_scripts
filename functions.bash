@@ -7,6 +7,8 @@
 #TERM_BOLD_OFF=$(tput -T xterm dim)
 TERM_BOLD_ON=$(tput -T xterm smso)
 TERM_BOLD_OFF=$(tput -T xterm rmso)
+TERM_ITAL_ON=$(tput -T xterm sitm)
+TERM_ITAL_OFF=$(tput -T xterm ritm)
 TERM_UL_ON=$(tput -T xterm smul)
 TERM_UL_OFF=$(tput -T xterm rmul)
 
@@ -133,7 +135,7 @@ myps() {
 	#list processes running under current user's name, except for some system stuff
 	#cat causes whole line to print, wrapped
 	# shellcheck disable=SC2009
-    ps -fu "$(whoami)" | grep -v -e '/usr/libexec/' -e 'dbus' -e 'gnome-pty-helper' -e 'ibus-daemon' -e 'keyring-daemon' | cat
+    ps -fu "$(whoami)" | command grep -v -e '/usr/libexec/' -e 'dbus' -e 'gnome-pty-helper' -e 'ibus-daemon' -e 'keyring-daemon' -e akonadi -e startkde -e kdeinit | cat
 }
 
 fixldpath() {
@@ -151,7 +153,7 @@ functions() {
 #hmm... typeset -f strips comments.
     typeset -f | grep '() $' | sed 's/() //' | sed 's/ //g'
 }
-
+# ' # just to fix syntax highlighting in atom editor
 # -----------------------------------------------------------------------------------------------
 #  ENHANCED 'find's
 # -----------------------------------------------------------------------------------------------
@@ -610,6 +612,72 @@ ssh-init() {
 	ssh-add ~/.ssh/mgvwdm003_id_rsa
 	ssh-add ~/.ssh/id_rsa.personal
 }
+
+_project_complete() {
+	local -a WORDS
+	WORDS=(completion badge)
+	for WORD in $(workon)
+	do
+		WORDS[${#WORDS[*]}]="${WORD}"
+	done
+	PROJDIRS=("${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/atom")
+	for DIR in ${PROJDIRS[*]}
+	do
+		for FNAME in "${DIR}"/*
+		do
+			if [[ -d "${FNAME}" ]]; then
+				WORDS[${#WORDS[*]}]="$(basename "${FNAME}")"
+			fi
+		done
+	done
+
+	echo complete -W \'"${WORDS[*]}"\' project
+}
+
+# project
+# master command to switch current directory to project directory
+# can be customized per directory with additional setup
+project() {
+	if [[ "$1" == "help" || -z "$1" ]]; then
+		cat <<-USAGE
+			Usage: ${TERM_BOLD_ON}${FUNCNAME[0]}${TERM_BOLD_OFF} ${TERM_ITAL_ON}project_name${TERM_ITAL_OFF}
+			         Quick jump to the project's root directory.
+			       ${TERM_BOLD_ON}${FUNCNAME[0]}${TERM_BOLD_OFF} completion
+			         Output commands to create bash completions for ${FUNCNAME[0]}.
+USAGE
+		return
+	fi
+
+	if [[ "$1" == "completion" ]]; then
+		# generate bash completion commands
+		_project_complete
+		return
+	fi
+
+	if [[ "$1" == "badge" ]]; then
+	  cd "${HOME}/Devel/personal/hackrva/Harmony-Badge-2017/firmware" || return 1
+	  return
+	fi
+
+  # if project is a python "virtual environment", the setup should be part of that
+  # we just need to say 'workon project_name'
+	local venv_dirs
+	venv_dirs=$(workon | tr '\n' '|')
+	#bash parameter substitution with pattern doesn't work on space (??)
+	# ${venv_dirs/ /|}
+	venv_dirs=${venv_dirs:0:-1}
+	eval "case $1 in ${venv_dirs}) workon $1; return;; esac"
+
+  #TODO: if we are currently in a virtual environment, deactivate it
+	cd "${HOME}/Devel/$1" 2>/dev/null && return
+	cd "${HOME}/Devel/personal/$1" 2>/dev/null && return
+	cd "${HOME}/Devel/personal/hackrva/$1" 2>/dev/null && return
+	cd "${HOME}/Devel/atom/$1" 2>/dev/null && return
+
+	echo "I can't find project $1, sorry!"
+	return 1
+}
+
 # Local Variables:
 # indent-tabs-mode: t
 # tab-width: 4
