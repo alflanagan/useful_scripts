@@ -483,7 +483,7 @@ xwhich() {
 
 wing() {
     #verbose causes errors to log, etc.
-    /usr/bin/wing6.0 --verbose "$@" > "${HOME}/log/wing6.log" 2>&1 &
+    /usr/bin/wing --verbose "$@" > "${HOME}/log/wing6.log" 2>&1 &
 }
 
 #get list of files in a zip, dropping all info except file names
@@ -506,14 +506,17 @@ extra() {
 }
 
 view_html() {
-    case "$@" in
+	  local args_to_url
+	  args_to_url="${*// /%20}"
+    case "${args_to_url}" in
         /*)
-            echo firefox --no-remote --new-window file://localhost"$*" "&"
-            firefox --no-remote --new-window file://localhost"$*" &
+            echo firefox --no-remote --new-window "file://localhost${args_to_url}" "&"
+            firefox --no-remote --new-window "file://localhost${args_to_url}" &
             ;;
         *)
-            echo firefox --no-remote --new-window "file://localhost${PWD}/$*" "&"
-            firefox --no-remote --new-window "file://localhost${PWD}/$*" &
+				    pwd_to_url="${PWD// /%20}"
+            echo firefox --no-remote --new-window "file://localhost${pwd_to_url}/${args_to_url}" "&"
+            firefox --no-remote --new-window "file://localhost${pwd_to_url}/${args_to_url}" &
             ;;
     esac
 }
