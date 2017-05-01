@@ -1,6 +1,6 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 # vim:ts=4:sw=4:expandtab:fileencoding=utf-8 -*- coding:utf-8; -*-
-# note python3.4 needed to get html.unescape() function
+# needs version 3.4 or later
 """Script to verify that image files referenced in the NITF files in a
 given directory actually exist in that directory.
 
