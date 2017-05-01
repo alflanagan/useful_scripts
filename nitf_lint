@@ -1,18 +1,22 @@
 #!/usr/bin/env dash
 # TODO: accept NITF version as parameter, and/or prompt for it
 
-DTD_DOC="/home/aflanagan/xsd/nitf-3-3.dtd"
+#DTD_DOC="/home/aflanagan/xsd/nitf-3-3.dtd"
 #DTD_DOC="http://www.nitf.org/site/nitf-documentation/nitf-3-1.dtd"
 
+LINT_FLAGS="--path /usr/share/xml/nitf:/usr/share/xml --schema nitf-3-6.xsd --noout"
+
 if [ $# -lt 1 ]; then
-    echo "Usage: $(basename $0) nitf_xml_file [...]"
-    echo "       Validates an XML file against the NITF 3.3 DTD."
+    echo "Usage: $(basename "$0") nitf_xml_file [...]"
+    echo "       Validates an XML file against the NITF 3.6 XML Schema."
     echo "       Prints errors found, or nothing if files are OK."
 else
     #xmllint "$1" --noout --dtdvalid http://www.iptc.org/std/NITF/3.4/specification/dtd/nitf-3-4.dtd
     for FNAME in "$@"
     do
-        xmllint "${FNAME}" --noout --dtdvalid ${DTD_DOC}
+        #xmllint "${FNAME}" --noout --dtdvalid ${DTD_DOC}
+        # shellcheck disable=SC2086
+        xmllint ${LINT_FLAGS} "${FNAME}"
         if grep -q '<title></title>' "${FNAME}" ; then
             echo "${FNAME} has no title." >&2
         fi
