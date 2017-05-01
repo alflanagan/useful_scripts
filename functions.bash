@@ -135,7 +135,7 @@ myps() {
 	#list processes running under current user's name, except for some system stuff
 	#cat causes whole line to print, wrapped
 	# shellcheck disable=SC2009
-    ps -fu "$(whoami)" | command grep -v -e '/usr/libexec/' -e 'dbus' -e 'gnome-pty-helper' -e 'ibus-daemon' -e 'keyring-daemon' -e akonadi -e startkde -e kdeinit | cat
+    ps -fu "$(whoami)" | command grep -v -e '/usr/libexec/' -e 'dbus' -e 'gnome-pty-helper' -e 'ibus-daemon' -e 'keyring-daemon' -e keybase | cat
 }
 
 fixldpath() {
@@ -640,10 +640,10 @@ _project_complete() {
 project() {
 	if [[ "$1" == "help" || -z "$1" ]]; then
 		cat <<-USAGE
-			Usage: ${TERM_BOLD_ON}${FUNCNAME[0]}${TERM_BOLD_OFF} ${TERM_ITAL_ON}project_name${TERM_ITAL_OFF}
-			         Quick jump to the project's root directory.
-			       ${TERM_BOLD_ON}${FUNCNAME[0]}${TERM_BOLD_OFF} completion
-			         Output commands to create bash completions for ${FUNCNAME[0]}.
+			Usage:	${TERM_BOLD_ON}${FUNCNAME[0]}${TERM_BOLD_OFF} ${TERM_ITAL_ON}project_name${TERM_ITAL_OFF}
+			        Quick jump to the project's root directory.
+			        ${TERM_BOLD_ON}${FUNCNAME[0]}${TERM_BOLD_OFF} completion
+			        Output commands to create bash completions for ${FUNCNAME[0]}.
 USAGE
 		return
 	fi
@@ -655,12 +655,12 @@ USAGE
 	fi
 
 	if [[ "$1" == "badge" ]]; then
-	  cd "${HOME}/Devel/personal/hackrva/Harmony-Badge-2017/firmware" || return 1
-	  return
+		cd "${HOME}/Devel/personal/hackrva/Harmony-Badge-2017/firmware" || return 1
+		return
 	fi
 
-  # if project is a python "virtual environment", the setup should be part of that
-  # we just need to say 'workon project_name'
+	# if project is a python "virtual environment", workon does setup
+	# we just need to say 'workon project_name'
 	local venv_dirs
 	venv_dirs=$(workon | tr '\n' '|')
 	#bash parameter substitution with pattern doesn't work on space (??)
@@ -668,11 +668,19 @@ USAGE
 	venv_dirs=${venv_dirs:0:-1}
 	eval "case $1 in ${venv_dirs}) workon $1; return;; esac"
 
-  #TODO: if we are currently in a virtual environment, deactivate it
+	if [[ "$1" == atom ]]; then
+		# atom is currently built against node 4.4.7
+		nvm use v4.4.7
+	elif [[ $(nvm current) == "v4.4.7" ]]; then
+		nvm use stable
+	fi
+
+	# if we are in virtual environment, deactivate it
+	[[ ! -z ${VIRTUAL_ENV} ]] && deactivate
+	cd "${HOME}/Devel/atom/$1" 2>/dev/null && return
 	cd "${HOME}/Devel/$1" 2>/dev/null && return
 	cd "${HOME}/Devel/personal/$1" 2>/dev/null && return
 	cd "${HOME}/Devel/personal/hackrva/$1" 2>/dev/null && return
-	cd "${HOME}/Devel/atom/$1" 2>/dev/null && return
 
 	echo "I can't find project $1, sorry!"
 	return 1
