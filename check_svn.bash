@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-cd ~/Devel
+cd ~/Devel || exit 1
 for DIR in *
 do
-    if [[ -d ${DIR} ]]; then
-        if [[ -d ${DIR}/.svn ]]; then
+    if [[ -d "${DIR}" ]]; then
+        if [[ -d "${DIR}/.svn" ]]; then
             echo "******** ${DIR} ***********"
-            pushd ${DIR} > /dev/null
+            pushd "${DIR}" > /dev/null
             svn status
             popd > /dev/null
         fi
