@@ -68,3 +68,7 @@ rspec
 QtSpim
 tixinfo
 help/
+composer*
+htmldiff
+ldiff
+phantomjs
