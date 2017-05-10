@@ -658,6 +658,7 @@ USAGE
 	fi
 
 	if [[ "$1" == "badge" ]]; then
+		[[ ! -z ${VIRTUAL_ENV} ]] && deactivate
 		cd "${HOME}/Devel/personal/hackrva/Harmony-Badge-2017/firmware" || return 1
 		return
 	fi
