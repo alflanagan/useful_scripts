@@ -72,3 +72,5 @@ composer*
 htmldiff
 ldiff
 phantomjs
+# never share this!
+get_pia_port.sh
