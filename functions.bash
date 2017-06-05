@@ -135,7 +135,7 @@ myps() {
 	#list processes running under current user's name, except for some system stuff
 	#cat causes whole line to print, wrapped
 	# shellcheck disable=SC2009
-    ps -fu "$(whoami)" | command grep -v -e '/usr/libexec/' -e 'dbus' -e 'gnome-pty-helper' -e 'ibus-daemon' -e 'keyring-daemon' -e keybase | cat
+    ps -fu "$(whoami)" | command grep -v -e '/usr/libexec/' -e 'dbus' -e 'gnome-pty-helper' -e 'ibus-daemon' -e 'keyring-daemon' -e keybase -e VBoxClient | cat
 }
 
 fixldpath() {
@@ -610,7 +610,8 @@ npm_packages() {
 }
 
 ssh-init() {
-	eval "$(ssh-agent)"
+	# eval "$(ssh-agent)"
+	# shouldn't need ssh-agent, gnome-keyring-daemon should set up SSH_AUTH_SOCK
 	ssh-add
 	ssh-add ~/.ssh/mgvwdm003_id_rsa
 	ssh-add ~/.ssh/id_rsa.personal
@@ -623,7 +624,7 @@ _project_complete() {
 	do
 		WORDS[${#WORDS[*]}]="${WORD}"
 	done
-	PROJDIRS=("${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/atom")
+	PROJDIRS=("${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/atom" "${HOME}/Devel/realmatch")
 	for DIR in ${PROJDIRS[*]}
 	do
 		for FNAME in "${DIR}"/*
@@ -670,8 +671,10 @@ USAGE
 	venv_dirs=$(workon | tr '\n' '|')
 	#bash parameter substitution with pattern doesn't work on space (??)
 	# ${venv_dirs/ /|}
-	venv_dirs=${venv_dirs:0:-1}
-	eval "case $1 in ${venv_dirs}) workon $1; return;; esac"
+	if [[ -n ${venv_dirs} ]]; then  # skip if none!
+		venv_dirs=${venv_dirs:0:-1}  # strip final '|'
+		eval "case $1 in ${venv_dirs}) workon $1; return;; esac"
+	fi
 
 	if [[ "$1" == atom ]]; then
 		# atom is currently built against node 4.4.7
@@ -683,6 +686,7 @@ USAGE
 	# if we are in virtual environment, deactivate it
 	[[ ! -z ${VIRTUAL_ENV} ]] && deactivate
 	cd "${HOME}/Devel/atom/$1" 2>/dev/null && return
+	cd "${HOME}/Devel/realmatch/$1" 2>/dev/null && return
 	cd "${HOME}/Devel/$1" 2>/dev/null && return
 	cd "${HOME}/Devel/personal/$1" 2>/dev/null && return
 	cd "${HOME}/Devel/personal/hackrva/$1" 2>/dev/null && return
