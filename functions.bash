@@ -369,6 +369,19 @@ h2d() {
     dc -e "16i${hexnum}p"
 }
 
+h2d() {
+    if [[ $# -lt 1 ]]; then
+        echo "Usage: ${FUNCNAME[0]} hex_number"
+        echo "       converts hex_number from hexadecimal to integer, prints result."
+        return 1
+    fi
+    local hexnum
+    typeset -u hexnum   # force uppercase
+    hexnum=$1
+    # TODO: check for valid digits
+    dc -e "16i${hexnum} 2op"
+}
+
 # tempting to create h2o(), but would it ever get used?
 # warning shouldn't apply to global functions to be used outside of script.
 # but how to tell shellcheck?
@@ -624,7 +637,7 @@ _project_complete() {
 	do
 		WORDS[${#WORDS[*]}]="${WORD}"
 	done
-	PROJDIRS=("${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/atom" "${HOME}/Devel/realmatch")
+	PROJDIRS=("${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel/hackrva")
 	for DIR in ${PROJDIRS[*]}
 	do
 		for FNAME in "${DIR}"/*
@@ -690,6 +703,7 @@ USAGE
 	cd "${HOME}/Devel/$1" 2>/dev/null && return
 	cd "${HOME}/Devel/personal/$1" 2>/dev/null && return
 	cd "${HOME}/Devel/personal/hackrva/$1" 2>/dev/null && return
+	cd "${HOME}/Devel/hackrva/$1" 2>/dev/null && return
 
 	echo "I can't find project $1, sorry!"
 	return 1
