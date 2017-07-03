@@ -630,6 +630,8 @@ ssh-init() {
 	ssh-add ~/.ssh/id_rsa.personal
 }
 
+####################### Project functions ##########################
+
 _project_complete() {
 	local -a WORDS
 	WORDS=(completion badge)
@@ -651,11 +653,68 @@ _project_complete() {
 	echo complete -W \'"${WORDS[*]}"\' project
 }
 
+# Writes to stdout one of:
+# workon -- matched a workon (py virtual environemtn) name
+# directory -- matched existing directory
+# nothing -- could not find directory
+_project_find_dir() {
+
+	if [[ "$1" == "badge" ]]; then
+		if [[ -d "${HOME}/Devel/personal/hackrva/Harmony-Badge-2017/firmware" ]]; then
+			echo "${HOME}/Devel/personal/hackrva/Harmony-Badge-2017/firmware"
+			return
+		fi
+		echo "${HOME}/Devel/hackrva/Harmony-Badge-2017/firmware"
+		return
+	fi
+
+	# if project is a python "virtual environment", workon does setup
+    # return "workon" as flag instead of directory name
+	local venv_dirs
+	venv_dirs=$(workon | tr '\n' '|')
+	if [[ -n ${venv_dirs} ]]; then
+		venv_dirs=${venv_dirs:0:-1}
+        # borrow pattern-matching in case statement; probably better way to do it
+		case "$1" in "${venv_dirs}")
+             echo "workon"
+             return;;
+        esac
+	fi
+
+	if [[ -d "${HOME}/Devel/atom/$1" ]]; then
+        echo "${HOME}/Devel/atom/$1"
+        return
+    fi
+	if [[ -d "${HOME}/Devel/realmatch/$1" ]]; then
+        echo "${HOME}/Devel/realmatch/$1"
+        return
+    fi
+	if [[ -d "${HOME}/Devel/$1" ]]; then
+        echo "${HOME}/Devel/$1"
+        return
+    fi
+	if [[ -d "${HOME}/Devel/personal/$1" ]]; then
+        echo "${HOME}/Devel/personal/$1"
+        return
+    fi
+	if [[ -d "${HOME}/Devel/personal/hackrva/$1" ]]; then
+        echo "${HOME}/Devel/personal/hackrva/$1"
+        return
+    fi
+	if [[ -d "${HOME}/Devel/hackrva/$1" ]]; then
+		echo "${HOME}/Devel/hackrva/$1"
+		return
+	fi
+}
+
+
 # project
 # master command to switch current directory to project directory
 # can be customized per directory with additional setup
 project() {
-	if [[ "$1" == "help" || -z "$1" ]]; then
+    local target_dir
+
+    if [[ "$1" == "help" || -z "$1" ]]; then
 		cat <<-USAGE
 			Usage:	${TERM_BOLD_ON}${FUNCNAME[0]}${TERM_BOLD_OFF} ${TERM_ITAL_ON}project_name${TERM_ITAL_OFF}
 			        Quick jump to the project's root directory.
@@ -678,17 +737,22 @@ USAGE
 		return
 	fi
 
-	# if project is a python "virtual environment", workon does setup
-	# we just need to say 'workon project_name'
-	local venv_dirs
-	venv_dirs=$(workon | tr '\n' '|')
-	#bash parameter substitution with pattern doesn't work on space (??)
-	# ${venv_dirs/ /|}
-	if [[ -n ${venv_dirs} ]]; then  # skip if none!
-		venv_dirs=${venv_dirs:0:-1}  # strip final '|'
-		eval "case $1 in ${venv_dirs}) workon $1; return;; esac"
-	fi
+    target_dir=$(_project_find_dir "$@")
 
+    if [[ $target_dir == "workon" ]]; then
+        # if project is a python "virtual environment", workon does setup
+    	# we just need to say 'workon project_name'
+    	local venv_dirs
+    	venv_dirs=$(workon | tr '\n' '|')
+    	#bash parameter substitution with pattern doesn't work on space (??)
+    	# ${venv_dirs/ /|}
+    	if [[ -n ${venv_dirs} ]]; then  # skip if none!
+    		venv_dirs=${venv_dirs:0:-1}  # strip final '|'
+    		eval "case $1 in ${venv_dirs}) workon $1; return;; esac"
+    	fi
+    fi
+
+    # get specific version of npm for atom project
 	if [[ "$1" == atom ]]; then
 		# atom is currently built against node 4.4.7
 		nvm use v4.4.7
@@ -698,15 +762,21 @@ USAGE
 
 	# if we are in virtual environment, deactivate it
 	[[ ! -z ${VIRTUAL_ENV} ]] && deactivate
-	cd "${HOME}/Devel/atom/$1" 2>/dev/null && return
-	cd "${HOME}/Devel/realmatch/$1" 2>/dev/null && return
-	cd "${HOME}/Devel/$1" 2>/dev/null && return
-	cd "${HOME}/Devel/personal/$1" 2>/dev/null && return
-	cd "${HOME}/Devel/personal/hackrva/$1" 2>/dev/null && return
-	cd "${HOME}/Devel/hackrva/$1" 2>/dev/null && return
 
-	echo "I can't find project $1, sorry!"
-	return 1
+    if [[ -z "${target_dir}" ]]; then
+        echo "I can't find project $1, sorry!"
+        return 1
+    else
+        # in PHP Composer project dir??
+        if [[ -f "${target_dir}/composer.json" ]]; then
+            pathmunge "${target_dir}/vendor/bin" before
+        fi
+        cd "${target_dir}" || return 1
+    fi
+}
+
+studio() {
+    studio.sh > ~/log/android_studio.log 2>&1
 }
 
 # Local Variables:
