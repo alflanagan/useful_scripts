@@ -369,10 +369,10 @@ h2d() {
     dc -e "16i${hexnum}p"
 }
 
-h2d() {
+h2b() {
     if [[ $# -lt 1 ]]; then
         echo "Usage: ${FUNCNAME[0]} hex_number"
-        echo "       converts hex_number from hexadecimal to integer, prints result."
+        echo "       converts hex_number from hexadecimal to binary, prints result."
         return 1
     fi
     local hexnum
