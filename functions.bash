@@ -153,7 +153,7 @@ functions() {
 #hmm... typeset -f strips comments.
     typeset -f | grep '() $' | sed 's/() //' | sed 's/ //g'
 }
-# ' # just to fix syntax highlighting in atom editor
+
 # -----------------------------------------------------------------------------------------------
 #  ENHANCED 'find's
 # -----------------------------------------------------------------------------------------------
@@ -631,16 +631,23 @@ ssh-init() {
 }
 
 ####################### Project functions ##########################
+## code to provide a "project" command, that will CD to a development
+## project, and optionally set up the environment appropriately for the
+## project
+## need to do this as shell functions as we change state of the shell.
+
+PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/hackrva")
 
 _project_complete() {
 	local -a WORDS
+	# "fixed" projects with special handlong
 	WORDS=(completion badge)
+	# python virtual environments
 	for WORD in $(workon)
 	do
 		WORDS[${#WORDS[*]}]="${WORD}"
 	done
-	PROJDIRS=("${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel/hackrva")
-	for DIR in ${PROJDIRS[*]}
+	for DIR in ${PROJECT_PARENTS[*]}
 	do
 		for FNAME in "${DIR}"/*
 		do
@@ -681,40 +688,28 @@ _project_find_dir() {
         esac
 	fi
 
-	if [[ -d "${HOME}/Devel/atom/$1" ]]; then
-        echo "${HOME}/Devel/atom/$1"
+	# search project parent directories, one at a time
+	for DIR in ${PROJECT_PARENTS[*]}
+	do
+		for DIRNAME in "${DIR}"/*
+		do
+			if [[ -d "${DIRNAME}/$1" ]]; then
+        echo "${DIRNAME}/$1"
         return
-    fi
-	if [[ -d "${HOME}/Devel/realmatch/$1" ]]; then
-        echo "${HOME}/Devel/realmatch/$1"
-        return
-    fi
-	if [[ -d "${HOME}/Devel/$1" ]]; then
-        echo "${HOME}/Devel/$1"
-        return
-    fi
-	if [[ -d "${HOME}/Devel/personal/$1" ]]; then
-        echo "${HOME}/Devel/personal/$1"
-        return
-    fi
-	if [[ -d "${HOME}/Devel/personal/hackrva/$1" ]]; then
-        echo "${HOME}/Devel/personal/hackrva/$1"
-        return
-    fi
-	if [[ -d "${HOME}/Devel/hackrva/$1" ]]; then
-		echo "${HOME}/Devel/hackrva/$1"
-		return
-	fi
+    	fi
+		done
+	done
 }
 
 
 # project
 # master command to switch current directory to project directory
 # can be customized per directory with additional setup
+# TODO: look for .project file in target directory, use settings
 project() {
-    local target_dir
+  local target_dir
 
-    if [[ "$1" == "help" || -z "$1" ]]; then
+  if [[ "$1" == "help" || -z "$1" ]]; then
 		cat <<-USAGE
 			Usage:	${TERM_BOLD_ON}${FUNCNAME[0]}${TERM_BOLD_OFF} ${TERM_ITAL_ON}project_name${TERM_ITAL_OFF}
 			        Quick jump to the project's root directory.
@@ -730,50 +725,37 @@ USAGE
 		return
 	fi
 
-	if [[ "$1" == "badge" ]]; then
-		[[ ! -z ${VIRTUAL_ENV} ]] && deactivate
-		cd "${HOME}/Devel/personal/hackrva/Harmony-Badge-2017/firmware" 2>/dev/null && return
-		cd "${HOME}/Devel/hackrva/Harmony-Badge-2017/firmware" || return 1
-		return
-	fi
+  target_dir=$(_project_find_dir "$@")
 
-    target_dir=$(_project_find_dir "$@")
-
-    if [[ $target_dir == "workon" ]]; then
-        # if project is a python "virtual environment", workon does setup
-    	# we just need to say 'workon project_name'
-    	local venv_dirs
-    	venv_dirs=$(workon | tr '\n' '|')
-    	#bash parameter substitution with pattern doesn't work on space (??)
-    	# ${venv_dirs/ /|}
-    	if [[ -n ${venv_dirs} ]]; then  # skip if none!
-    		venv_dirs=${venv_dirs:0:-1}  # strip final '|'
-    		eval "case $1 in ${venv_dirs}) workon $1; return;; esac"
-    	fi
+  if [[ $target_dir == "workon" ]]; then
+    # if project is a python "virtual environment", workon does setup
+  	# we just need to say 'workon project_name'
+  	local venv_dirs
+  	venv_dirs=$(workon | tr '\n' '|')
+    #bash parameter substitution with pattern doesn't work on space (??)
+    # ${venv_dirs/ /|}
+    if [[ -n ${venv_dirs} ]]; then  # skip if none!
+    	venv_dirs=${venv_dirs:0:-1}  # strip final '|'
+    	eval "case $1 in ${venv_dirs}) workon $1; return;; esac"
     fi
-
-    # get specific version of npm for atom project
-	if [[ "$1" == atom ]]; then
-		# atom is currently built against node 4.4.7
-		nvm use v4.4.7
-	elif [[ $(nvm current) == "v4.4.7" ]]; then
-		nvm use stable
-	fi
+  fi
 
 	# if we are in virtual environment, deactivate it
 	[[ ! -z ${VIRTUAL_ENV} ]] && deactivate
 
-    if [[ -z "${target_dir}" ]]; then
-        echo "I can't find project $1, sorry!"
-        return 1
-    else
-        # in PHP Composer project dir??
-        if [[ -f "${target_dir}/composer.json" ]]; then
-            pathmunge "${target_dir}/vendor/bin" before
-        fi
-        cd "${target_dir}" || return 1
-    fi
-}
+  if [[ -z "${target_dir}" ]]; then
+    echo "I can't find project $1, sorry!"
+    return 1
+  else
+    # in PHP Composer project dir??
+    if [[ -f "${target_dir}/composer.json" ]]; then
+      pathmunge "${target_dir}/vendor/bin" before
+    elif [[ -d "${target_dir}/node_modules/.bin" ]]; then
+			pathmunge "${target_dir}/node_modules/.bin" before
+		fi
+    cd "${target_dir}" || return 1
+  fi
+}  # project()
 
 studio() {
     studio.sh > ~/log/android_studio.log 2>&1
