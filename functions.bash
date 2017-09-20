@@ -691,13 +691,10 @@ _project_find_dir() {
 	# search project parent directories, one at a time
 	for DIR in ${PROJECT_PARENTS[*]}
 	do
-		for DIRNAME in "${DIR}"/*
-		do
-			if [[ -d "${DIRNAME}/$1" ]]; then
-        echo "${DIRNAME}/$1"
-        return
-    	fi
-		done
+    if [[ -d "${DIR}/$1" ]]; then
+      echo "${DIR}/$1"
+      return
+    fi
 	done
 }
 
@@ -748,9 +745,10 @@ USAGE
     return 1
   else
     # in PHP Composer project dir??
-    if [[ -f "${target_dir}/composer.json" ]]; then
+    if [[ -f "${target_dir}/composer.json" && -d "${target_dir}/vendor/bin" ]]; then
       pathmunge "${target_dir}/vendor/bin" before
-    elif [[ -d "${target_dir}/node_modules/.bin" ]]; then
+    fi
+    if [[ -d "${target_dir}/node_modules/.bin" ]]; then
 			pathmunge "${target_dir}/node_modules/.bin" before
 		fi
     cd "${target_dir}" || return 1
