@@ -640,8 +640,7 @@ ssh-init() {
 ## project, and optionally set up the environment appropriately for the
 ## project
 ## need to do this as shell functions as we change state of the shell.
-
-PROJECT_PARENTS=("${HOME}/Devel" "${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel/swift" "${HOME}/Devel/personal")
+PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/hackrva" "${HOME}/Devel/swift")
 
 _project_complete() {
 	local -a WORDS
