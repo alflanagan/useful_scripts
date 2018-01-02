@@ -764,10 +764,10 @@ USAGE
   else
     # in PHP Composer project dir??
     if [[ -f "${target_dir}/composer.json" && -d "${target_dir}/vendor/bin" ]]; then
-      pathmunge "${target_dir}/vendor/bin" before
+      pathmunge "${target_dir}/vendor/bin"
     fi
     if [[ -d "${target_dir}/node_modules/.bin" ]]; then
-			pathmunge "${target_dir}/node_modules/.bin" before
+			pathmunge "${target_dir}/node_modules/.bin"
 		fi
     cd "${target_dir}" || return 1
   fi
@@ -775,6 +775,10 @@ USAGE
 
 studio() {
     studio.sh > ~/log/android_studio.log 2>&1
+}
+
+trash-size() {
+  du -sh ~/.local/share/Trash
 }
 
 # Local Variables:
