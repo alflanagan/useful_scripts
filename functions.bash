@@ -82,6 +82,7 @@ is_in_path() {
 }
 
 #TODO: generalize to take path variable name as param
+#TODO: handle paths that match except for trailing '/'
 pathrm() {
     local paths=() i=0 newpath=""
 
@@ -301,6 +302,7 @@ llgv() {
 
 every() {
 #TODO: detect, handle bad input
+#SEE: watch (1)
     if [[ $# -lt 3 ]]; then
         echo "Usage: ${FUNCNAME[0]} _seconds_ do _command_"
         echo "       where _seconds_ is time, and _command_ is a shell command"
@@ -489,10 +491,13 @@ curl_get_missing() {
     fi
 }
 
-xwhich() {
-##TODO: won't find executable file if function or alias exists
-    (alias; declare -f) | /usr/bin/which --tty-only --read-alias --read-functions --show-tilde "$@"
-}
+# alas, debian doesn't use full-featured which
+if [[ ! -f /etc/debian_release ]]; then
+	xwhich() {
+	##TODO: won't find executable file if function or alias exists
+	    (alias; declare -f) | /usr/bin/which --tty-only --read-alias --read-functions --show-tilde "$@"
+	}
+fi
 
 wing() {
     #verbose causes errors to log, etc.
@@ -636,12 +641,16 @@ ssh-init() {
 ## project
 ## need to do this as shell functions as we change state of the shell.
 
-PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/hackrva")
+PROJECT_PARENTS=("${HOME}/Devel" "${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel/swift" "${HOME}/Devel/personal")
 
 _project_complete() {
 	local -a WORDS
 	# "fixed" projects with special handlong
-	WORDS=(completion badge)
+	if [[ $(_has_badge) == Y ]]; then
+		WORDS=(completion badge)
+	else
+		WORDS=(completion)
+	fi
 	# python virtual environments
 	for WORD in $(workon)
 	do
@@ -660,13 +669,23 @@ _project_complete() {
 	echo complete -W \'"${WORDS[*]}"\' project
 }
 
+_has_badge() {
+	if [[ -d "${HOME}/Devel/personal/hackrva/Harmony-Badge-2017/firmware" ]]; then
+		echo Y
+	elif [[ -d "${HOME}/Devel/hackrva/Harmony-Badge-2017/firmware" ]]; then
+		echo Y
+	else
+		echo N
+	fi
+}
+
 # Writes to stdout one of:
 # workon -- matched a workon (py virtual environemtn) name
 # directory -- matched existing directory
 # nothing -- could not find directory
 _project_find_dir() {
 
-	if [[ "$1" == "badge" ]]; then
+	if [[ "$1" == "badge" && $(_has_badge) == Y ]]; then
 		if [[ -d "${HOME}/Devel/personal/hackrva/Harmony-Badge-2017/firmware" ]]; then
 			echo "${HOME}/Devel/personal/hackrva/Harmony-Badge-2017/firmware"
 			return
@@ -691,13 +710,10 @@ _project_find_dir() {
 	# search project parent directories, one at a time
 	for DIR in ${PROJECT_PARENTS[*]}
 	do
-		for DIRNAME in "${DIR}"/*
-		do
-			if [[ -d "${DIRNAME}/$1" ]]; then
-        echo "${DIRNAME}/$1"
-        return
-    	fi
-		done
+		if [[ -d "${DIR}/$1" ]]; then
+      echo "${DIR}/$1"
+      return
+    fi
 	done
 }
 
