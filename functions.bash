@@ -640,7 +640,7 @@ ssh-init() {
 ## project, and optionally set up the environment appropriately for the
 ## project
 ## need to do this as shell functions as we change state of the shell.
-PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/hackrva" "${HOME}/Devel/swift")
+PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/hackrva" "${HOME}/Devel/swift" "${HOME}/AndroidStudioProjects")
 
 _project_complete() {
 	local -a WORDS
@@ -774,7 +774,7 @@ USAGE
 }  # project()
 
 studio() {
-    studio.sh > ~/log/android_studio.log 2>&1
+    studio.sh > ~/log/android_studio.log 2>&1 &
 }
 
 trash-size() {

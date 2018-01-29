@@ -84,3 +84,7 @@ ipython
 pip
 soapui
 sqlite
+wp
+wp-cli.phar
+wp-completion.bash
+mancy
