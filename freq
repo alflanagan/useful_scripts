@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+import sys
+from collections import Counter
+
+freq=Counter()
+for line in sys.stdin:
+  freq[line[:-1]]+=1
+
+# TODO: make left column as wide as widest key
+# TODO: right-align right column
+for key in freq:
+  print("{}: {:,}".format(key, freq[key]))
+print('---------------')
+print('Total: {:,}'.format(sum([freq[key] for key in freq])))
