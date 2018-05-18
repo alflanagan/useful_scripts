@@ -520,7 +520,7 @@ dtree() {
 extra() {
     #switch from home directory to parallel directory on /mnt/extra
     #for when I don't want to work through soft links
-    cd $"{PWD/\/home\/aflanagan/\/mnt\/extra}" || return 1
+    cd "${PWD/\\/home\\/aflanagan/\\/mnt\\/extra}" || return 1
 }
 
 view_html() {
@@ -559,7 +559,8 @@ cs() {
 }
 
 chrome() {
-  google-chrome >~/log/chrome.log 2>&1 &
+  google-chrome > ~/log/chrome.log 2>&1 &
+  # chromium-browser > ~/log/chromium.log 2>&1 &
 }
 
 # set up synonym for for firefox if user version present
@@ -640,7 +641,8 @@ ssh-init() {
 ## project, and optionally set up the environment appropriately for the
 ## project
 ## need to do this as shell functions as we change state of the shell.
-PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/hackrva" "${HOME}/Devel/swift" "${HOME}/AndroidStudioProjects")
+# PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/hackrva" "${HOME}/Devel/swift")
+PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/AndroidStudioProjects")
 
 _project_complete() {
 	local -a WORDS
@@ -774,11 +776,26 @@ USAGE
 }  # project()
 
 studio() {
-    studio.sh > ~/log/android_studio.log 2>&1 &
+	local studio_log=~/log/android_studio.log
+    local fix_file=~/AndroidStudioProjects/android-studio.fix
+
+    if [[ -f "${fix_file}" ]]; then
+        STUDIO_VM_OPTIONS="${fix_file}" studio.sh > "${studio_log}" 2>&1 &
+    else
+	    studio.sh > "${studio_log}" 2>&1 &
+    fi
 }
 
 trash-size() {
   du -sh ~/.local/share/Trash
+}
+
+with_commas () {
+    if [[ $# -lt 1 ]]; then
+        >&2 echo "One argument required: an integer. Prints the integer formatted with locale-dependent thousands separators."
+        return 1
+    fi
+    python3 -c "print('{:,}'.format($1), end='')"
 }
 
 # Local Variables:
