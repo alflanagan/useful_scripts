@@ -88,3 +88,8 @@ wp
 wp-cli.phar
 wp-completion.bash
 mancy
+gdx-*
+*.txt
+__init__.py
+coverage
+utl_validate
