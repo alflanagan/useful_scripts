@@ -72,8 +72,6 @@ composer*
 htmldiff
 ldiff
 phantomjs
-# never share this!
-get_pia_port.sh
 Sencha
 monodevelop
 nanoc
@@ -88,3 +86,6 @@ wp
 wp-cli.phar
 wp-completion.bash
 mancy
+node_find
+node_find.js
+*.AppImage
