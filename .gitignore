@@ -89,3 +89,8 @@ mancy
 node_find
 node_find.js
 *.AppImage
+gdx-*
+*.txt
+__init__.py
+coverage
+utl_validate

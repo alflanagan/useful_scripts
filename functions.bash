@@ -134,6 +134,7 @@ ldlibmunge() {
 
 myps() {
 	#list processes running under current user's name, except for some system stuff
+	#very much an ad hoc hack
 	#cat causes whole line to print, wrapped
 	# shellcheck disable=SC2009
     ps -fu "$(whoami)" | command grep -v -e '/usr/libexec/' -e 'dbus' -e 'gnome-pty-helper' -e 'ibus-daemon' -e 'keyring-daemon' -e keybase -e VBoxClient | cat
@@ -147,6 +148,37 @@ fixldpath() {
         bldpath newldpath "${DIR}"
     done
     export LD_LIBRARY_PATH="${newldpath}"
+}
+
+fixldpath() {
+	local paths=() i=0 newpath=""
+
+	#safely split LD_LIBRARY_PATH on ':', should handle dirnames with special chars
+	while IFS= read -r -d $':' dname; do
+		paths[i++]="$dname"
+	done < <(echo "$LD_LIBRARY_PATH":)
+
+	# build new path with all elements of old path included exactly once
+	for dname in "${paths[@]}"
+	do
+		if [[ ! -z "${dname}" && -d "${dname}" ]]
+		then
+			#extra colons simplify case
+			case ":${newpath}:" in
+				*:${dname}:*)
+				    ;;
+				*)
+					  if [[ -z "${newpath}" ]]
+						then
+							  newpath="${dname}"
+						else
+				     		newpath="${newpath}:${dname}"
+				    fi ;;
+			esac
+		fi
+  done
+
+  export LD_LIBRARY_PATH="${newpath}"
 }
 
 #TODO: modify this so that functions can have special doc comment as first line
@@ -220,7 +252,6 @@ find_no_svn_igrep() {
 
 # -----------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------------
-#appears to be no way to turn off unalias error if alias doesn't exist
 unalias ll 2>/dev/null
 
 # shellcheck disable=SC2012
@@ -255,9 +286,9 @@ chkdiskio() {
 
 chkpartio() {
 #TODO: intelligently get list of partitions
-    vmstat -p sda1
-    vmstat -p sda2
-    vmstat -p sda3
+  for PART in /dev/sda?; do
+    vmstat -p $PART
+	done
 }
 
 execsql() {
@@ -339,9 +370,9 @@ with() {
         shift
     fi
     local CMDS="$*"
-    pushd "${DIR}" > /dev/null
+    pushd "${DIR}" > /dev/null || return
     eval "${CMDS}"
-    popd > /dev/null
+    popd > /dev/null || return 1
 }
 
 sum_size() {
@@ -354,7 +385,7 @@ sum_size() {
         return 1
     fi
     local TOTAL
-    TOTAL=$(du -c "$@" | tail -n 1)
+    TOTAL=$(du -c -k "$@" | tail -n 1)
     echo "${TOTAL}" | cut -f1 -d" "
 }
 
@@ -387,67 +418,64 @@ h2b() {
 # tempting to create h2o(), but would it ever get used?
 # warning shouldn't apply to global functions to be used outside of script.
 # but how to tell shellcheck?
-# shellcheck disable=SC2120,SC2119
-{
-	o2d() {
-	  [[ $# -ne 1 ]] && {
-	      echo "Usage: ${FUNCNAME[0]} octal_number"
-	      echo "       converts octal_number from octal to integer, prints result."
-	      return 1
-	  }
-	  local valid_number
-	  valid_number='^[0-7]+$'
+# shellcheck disable=SC2120
+o2d() {
+  [[ $# -ne 1 ]] && {
+      echo "Usage: ${FUNCNAME[0]} octal_number"
+      echo "       converts octal_number from octal to integer, prints result."
+      return 1
+  }
+  local valid_number
+  valid_number='^[0-7]+$'
 
-	  [[ "$1" =~ ${valid_number} ]] || {
-	      echo "ERROR: input not an octal number" >&2
-	      o2d  # show usage
-	      return 1
-	  }
+  [[ "$1" =~ ${valid_number} ]] || {
+      echo "ERROR: input not an octal number" >&2
+      o2d  # show usage
+      return 1
+  }
 
-	  dc -e "8i${1}p"
-	}
-
-	d2h() {
-	  if [[ $# -lt 1 ]]; then
-	      echo "Usage: ${FUNCNAME[0]} number"
-	      echo "       converts decimal number to hexadecimal, prints result."
-	      return 1
-	  elif [[ $1 == 0 ]]; then
-	      # see comment in o2d()
-	      echo "0"
-	      return
-	  fi
-	  declare -i INPUT="$1"
-
-	  if [[ ${INPUT} -eq 0 ]]; then
-	    # bad conversion, show help
-	    echo "ERROR: input is not a number" >&2
-	    d2h
-	  else
-	    dc -e "16o${INPUT}p"
-	  fi
-	}
-
-	d2o() {
-	  if [[ $# -lt 1 ]]; then
-	      echo "Usage: ${FUNCNAME[0]} number"
-	      echo "       converts decimal number to octal, prints result."
-	      return 1
-	  elif [[ $1 == 0 ]]; then
-	      # see comment in o2d()
-	      echo "0"
-	      return
-	  fi
-
-	  local -i INPUT="${1}"
-	  if [[ ${INPUT} -eq 0 ]]; then
-	    echo "ERROR: input is not a number" >&2
-	    d2o
-	  else
-	    dc -e "8o${INPUT}p"
-	  fi
-	}
+  dc -e "8i${1}p"
 }
+
+#shellcheck disable=SC2120
+d2h() {
+  if [[ $# -lt 1 ]]; then
+      echo "Usage: ${FUNCNAME[0]} number"
+      echo "       converts decimal number to hexadecimal, prints result."
+      return 1
+  elif [[ $1 == 0 ]]; then
+      # see comment in o2d()
+      echo "0"
+      return
+  fi
+  declare -i INPUT="$1"
+
+  if [[ ${INPUT} -eq 0 ]]; then
+    # bad conversion, show help
+    echo "ERROR: input is not a number" >&2
+    d2h
+  else
+    dc -e "16o${INPUT}p"
+  fi
+}
+
+#shellcheck disable=SC2120
+d2o() {
+  if [[ $# -lt 1 ]]; then
+      echo "Usage: ${FUNCNAME[0]} number"
+      echo "       converts decimal number to octal, prints result."
+      return 1
+  fi
+
+  local -i INPUT="${1}"
+  if [[ $1 -ne 0 && ${INPUT} -eq 0 ]]; then
+    echo "ERROR: input is not a number" >&2
+    d2o
+  else
+    dc -e "8o${INPUT}p"
+  fi
+}
+
 x2d () {
     #turns out when I try to remember "h2d" my brain comes up with
     #"x2d" instead. Go figure.
@@ -502,6 +530,11 @@ fi
 wing() {
     #verbose causes errors to log, etc.
     /usr/bin/wing --verbose "$@" > "${HOME}/log/wing6.log" 2>&1 &
+}
+
+wing7() {
+    #verbose causes errors to log, etc.
+    ${HOME}/opt/bin/wing7.0 --verbose "$@" > "${HOME}/log/wing7.log" 2>&1 &
 }
 
 #get list of files in a zip, dropping all info except file names
@@ -642,7 +675,7 @@ ssh-init() {
 ## project
 ## need to do this as shell functions as we change state of the shell.
 # PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/hackrva" "${HOME}/Devel/swift")
-PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/AndroidStudioProjects")
+PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/AndroidStudioProjects" "${HOME}/Documents/PlatformIO/Projects/")
 
 _project_complete() {
 	local -a WORDS
@@ -727,38 +760,38 @@ project() {
   local target_dir
 
   if [[ "$1" == "help" || -z "$1" ]]; then
-		cat <<-USAGE
-			Usage:	${TERM_BOLD_ON}${FUNCNAME[0]}${TERM_BOLD_OFF} ${TERM_ITAL_ON}project_name${TERM_ITAL_OFF}
-			        Quick jump to the project's root directory.
-			        ${TERM_BOLD_ON}${FUNCNAME[0]}${TERM_BOLD_OFF} completion
-			        Output commands to create bash completions for ${FUNCNAME[0]}.
+    cat <<-USAGE
+	Usage: ${TERM_BOLD_ON}${FUNCNAME[0]}${TERM_BOLD_OFF} ${TERM_ITAL_ON}project_name${TERM_ITAL_OFF}
+	       Quick jump to the project's root directory.
+	       ${TERM_BOLD_ON}${FUNCNAME[0]}${TERM_BOLD_OFF} completion
+	       Output commands to create bash completions for ${FUNCNAME[0]}.
 USAGE
-		return
-	fi
+    return
+  fi
 
-	if [[ "$1" == "completion" ]]; then
-		# generate bash completion commands
-		_project_complete
-		return
-	fi
+  if [[ "$1" == "completion" ]]; then
+    # generate bash completion commands
+     _project_complete
+    return
+  fi
 
   target_dir=$(_project_find_dir "$@")
 
   if [[ $target_dir == "workon" ]]; then
     # if project is a python "virtual environment", workon does setup
-  	# we just need to say 'workon project_name'
-  	local venv_dirs
-  	venv_dirs=$(workon | tr '\n' '|')
+    # we just need to say 'workon project_name'
+    local venv_dirs
+    venv_dirs=$(workon | tr '\n' '|')
     #bash parameter substitution with pattern doesn't work on space (??)
     # ${venv_dirs/ /|}
     if [[ -n ${venv_dirs} ]]; then  # skip if none!
-    	venv_dirs=${venv_dirs:0:-1}  # strip final '|'
-    	eval "case $1 in ${venv_dirs}) workon $1; return;; esac"
+      venv_dirs=${venv_dirs:0:-1}  # strip final '|'
+      eval "case $1 in ${venv_dirs}) workon $1; return;; esac"
     fi
   fi
 
-	# if we are in virtual environment, deactivate it
-	[[ ! -z ${VIRTUAL_ENV} ]] && deactivate
+  # if we are in virtual environment, deactivate it
+  [[ ! -z ${VIRTUAL_ENV} ]] && deactivate
 
   if [[ -z "${target_dir}" ]]; then
     echo "I can't find project $1, sorry!"
@@ -769,21 +802,25 @@ USAGE
       pathmunge "${target_dir}/vendor/bin"
     fi
     if [[ -d "${target_dir}/node_modules/.bin" ]]; then
-			pathmunge "${target_dir}/node_modules/.bin"
-		fi
+      pathmunge "${target_dir}/node_modules/.bin"
+    fi
     cd "${target_dir}" || return 1
   fi
 }  # project()
 
 studio() {
-	local studio_log=~/log/android_studio.log
-    local fix_file=~/AndroidStudioProjects/android-studio.fix
+  local studio_log=~/log/android_studio.log
+  local fix_file=~/AndroidStudioProjects/android-studio.fix
+  # override global KOTLIN_HOME so studio uses its own version
+  # OK, so far no attempt has fixed incompatibility between Android Studio and command-line
+  # kotlin installed by sdk. Sigh.
+  # export KOTLIN_HOME="${HOME}/opt/android-studio/plugins/Kotlin/kotlinc"
 
-    if [[ -f "${fix_file}" ]]; then
-        STUDIO_VM_OPTIONS="${fix_file}" studio.sh > "${studio_log}" 2>&1 &
-    else
-	    studio.sh > "${studio_log}" 2>&1 &
-    fi
+  if [[ -f "${fix_file}" ]]; then
+    STUDIO_VM_OPTIONS="${fix_file}" studio.sh > "${studio_log}" 2>&1 &
+  else
+    studio.sh > "${studio_log}" 2>&1 &
+  fi
 }
 
 trash-size() {
@@ -797,6 +834,13 @@ with_commas () {
     fi
     python3 -c "print('{:,}'.format($1), end='')"
 }
+
+avd() {
+#    ~/Android/Sdk/emulator/emulator @Nexus_5X_API_27_Play_ > ~/log/avd.log 2>&1 &
+#    ~/Android/Sdk/emulator/emulator @Nexus_One_API_26_Intel_ > ~/log/avd.log 2>&1 &
+    ~/Android/Sdk/emulator/emulator @testAVD > ~/log/avd.log 2>&1 &
+}
+
 
 # Local Variables:
 # indent-tabs-mode: t
