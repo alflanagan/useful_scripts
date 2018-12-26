@@ -1,3 +1,7 @@
 #!/usr/bin/env dash
-EC2_INSTANCE=ec2-54-209-155-69.compute-1.amazonaws.com
-ssh -i ~/.ssh/instagramcloneandroid.pem ubuntu@${EC2_INSTANCE}
+
+EC2_INSTANCE=ec2-52-202-175-135.compute-1.amazonaws.com
+USERNAME=centos
+CERTFILE=${HOME}/.ssh/basic-web-server-alloydflanagan.pem
+
+ssh -i ${CERTFILE} ${USERNAME}@${EC2_INSTANCE}
