@@ -534,7 +534,7 @@ wing() {
 
 wing7() {
     #verbose causes errors to log, etc.
-    ${HOME}/opt/bin/wing7.0 --verbose "$@" > "${HOME}/log/wing7.log" 2>&1 &
+    /usr/bin/wing7.0 --verbose "$@" > "${HOME}/log/wing7.log" 2>&1 &
 }
 
 #get list of files in a zip, dropping all info except file names
@@ -675,7 +675,7 @@ ssh-init() {
 ## project
 ## need to do this as shell functions as we change state of the shell.
 # PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/hackrva" "${HOME}/Devel/swift")
-PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/AndroidStudioProjects" "${HOME}/Documents/PlatformIO/Projects/")
+PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel" "${HOME}/Devel/rust" "${HOME}/Devel/personal" "${HOME}/AndroidStudioProjects" "${HOME}/Devel/ruby")
 
 _project_complete() {
 	local -a WORDS
@@ -686,6 +686,8 @@ _project_complete() {
 		WORDS=(completion)
 	fi
 	# python virtual environments
+	# TODO: figure out how to filter out pipenv environments
+	# associated with a project directory
 	for WORD in $(workon)
 	do
 		WORDS[${#WORDS[*]}]="${WORD}"
@@ -801,9 +803,16 @@ USAGE
     if [[ -f "${target_dir}/composer.json" && -d "${target_dir}/vendor/bin" ]]; then
       pathmunge "${target_dir}/vendor/bin"
     fi
+    # Node project?
     if [[ -d "${target_dir}/node_modules/.bin" ]]; then
       pathmunge "${target_dir}/node_modules/.bin"
     fi
+    # Rails project, probably others
+    if [[ -d "${target_dir}/bin" ]]; then
+      pathmunge "${target_dir}/bin"
+    fi
+    # Problem with all the above: PATH changes don't go away.
+    # Have never had that be an issue in practice
     cd "${target_dir}" || return 1
   fi
 }  # project()
@@ -841,6 +850,14 @@ avd() {
     ~/Android/Sdk/emulator/emulator @testAVD > ~/log/avd.log 2>&1 &
 }
 
+kts() {
+    exec kotlinc -script "$@"
+}
+
+mdcd () {
+    mkdir "$1"
+    cd "$1"
+}
 
 # Local Variables:
 # indent-tabs-mode: t
