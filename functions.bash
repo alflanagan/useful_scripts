@@ -529,12 +529,7 @@ fi
 
 wing() {
     #verbose causes errors to log, etc.
-    /usr/bin/wing --verbose "$@" > "${HOME}/log/wing6.log" 2>&1 &
-}
-
-wing7() {
-    #verbose causes errors to log, etc.
-    ${HOME}/opt/bin/wing7.0 --verbose "$@" > "${HOME}/log/wing7.log" 2>&1 &
+    /usr/bin/wing --verbose "$@" > "${HOME}/log/wing.log" 2>&1 &
 }
 
 #get list of files in a zip, dropping all info except file names
@@ -675,7 +670,7 @@ ssh-init() {
 ## project
 ## need to do this as shell functions as we change state of the shell.
 # PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/hackrva" "${HOME}/Devel/swift")
-PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/AndroidStudioProjects" "${HOME}/Documents/PlatformIO/Projects/")
+PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/AndroidStudioProjects" "${HOME}/Documents/PlatformIO/Projects/" "${HOME}/Devel/rust" "${HOME}/Devel/ruby")
 
 _project_complete() {
 	local -a WORDS
@@ -841,6 +836,9 @@ avd() {
     ~/Android/Sdk/emulator/emulator @testAVD > ~/log/avd.log 2>&1 &
 }
 
+function vim () {
+	nvim "$@"
+}
 
 # Local Variables:
 # indent-tabs-mode: t
