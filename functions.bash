@@ -529,12 +529,7 @@ fi
 
 wing() {
     #verbose causes errors to log, etc.
-    /usr/bin/wing --verbose "$@" > "${HOME}/log/wing6.log" 2>&1 &
-}
-
-wing7() {
-    #verbose causes errors to log, etc.
-    /usr/bin/wing7.0 --verbose "$@" > "${HOME}/log/wing7.log" 2>&1 &
+    /usr/bin/wing --verbose "$@" > "${HOME}/log/wing.log" 2>&1 &
 }
 
 #get list of files in a zip, dropping all info except file names
@@ -675,7 +670,7 @@ ssh-init() {
 ## project
 ## need to do this as shell functions as we change state of the shell.
 # PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/hackrva" "${HOME}/Devel/swift")
-PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel" "${HOME}/Devel/rust" "${HOME}/Devel/personal" "${HOME}/AndroidStudioProjects" "${HOME}/Devel/ruby")
+PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel" "${HOME}/Devel/rust" "${HOME}/Devel/personal" "${HOME}/AndroidStudioProjects" "${HOME}/Devel/ruby" "${HOME}/Devel/elections")
 
 _project_complete() {
 	local -a WORDS
@@ -809,7 +804,7 @@ USAGE
     fi
     # Rails project, probably others
     if [[ -d "${target_dir}/bin" ]]; then
-      pathmunge "${target_dir}/bin"
+      pathmunge "${target_dir}/bin" before
     fi
     # Problem with all the above: PATH changes don't go away.
     # Have never had that be an issue in practice
@@ -854,9 +849,18 @@ kts() {
     exec kotlinc -script "$@"
 }
 
-mdcd () {
-    mkdir "$1"
-    cd "$1"
+# from the following stack exhange answer, including nice discussion of edge cases this is
+# designed to handle
+# https://unix.stackexchange.com/a/9124/24158
+mkcd () {
+  case "$1" in
+    */..|*/../) cd -- "$1";; # that doesn't make any sense unless the directory already exists
+    /*/../*) (cd "${1%/../*}/.." && mkdir -p "./${1##*/../}") && cd -- "$1";;
+    /*) mkdir -p "$1" && cd "$1";;
+    */../*) (cd "./${1%/../*}/.." && mkdir -p "./${1##*/../}") && cd "./$1";;
+    ../*) (cd .. && mkdir -p "${1#.}") && cd "$1";;
+    *) mkdir -p "./$1" && cd "./$1";;
+  esac
 }
 
 # Local Variables:
