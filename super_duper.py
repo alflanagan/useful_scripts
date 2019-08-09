@@ -5,8 +5,11 @@ import argparse
 from subprocess import Popen, PIPE
 from collections import defaultdict
 
+EXCLUDED_DIRS = set(['__pycache', '.git', 'node_modules', 'build', '.npm'])
+"Directory names to always skip, regardless of location."
 
-class DirType(object):
+
+class DirType:
     """Factory for creating directory object types for `argparse`.
 
     Instances of DirType are typically passed as type= arguments to the
@@ -18,24 +21,34 @@ class DirType(object):
         if os.path.isdir(pathlike):
             os.listdir(pathlike)  # verify readability
             return pathlike
-        else:
-            raise ArgumentTypeError('{} is not a directory'.format(pathlike))
+        raise argparse.ArgumentTypeError(
+            '{} is not a directory'.format(pathlike))
+
 
 def get_args():
     """Process command-line options, return options object."""
-    desc = "Calculate a hash for each file in a directory tree, report duplicates."
+    # TODO: add psql login args, such as for database fileinfo, user aflanagan
+    desc = ("Calculate a hash for each file in a directory tree,"
+            " report duplicates.")
     parser = argparse.ArgumentParser(description=desc)
 
     parser.add_argument('directory', help="The name of a directory to scan")
-    parser.add_argument('--max-files', type=int, default=100, metavar='COUNT',
-                        help="A maximum number of files to scan. 0 ==> no maximum.")
+    parser.add_argument('--max-files', type=int, default=1000, metavar='COUNT',
+                        help="A maximum number of files to scan. "
+                        "0 ==> no maximum.")
     parser.add_argument('--relative_to', type=DirType(), default='/',
                         metavar='DIR_NAME',
                         help="Top-level directory for stored filenames")
     parser.add_argument('--store',
                         type=argparse.FileType('w'),
-                        help="Filename of a a persistent storage file. Files from previous run will not be re-scanned or count against '--max-files' limit, but will be reported.")
+                        help="""Filename of a persistent storage file. Files from
+                             previous run will not be re-scanned or count
+                             against '--max-files' limit, but will be
+                             reported.""")
+    parser.add_argument('--show', type=bool, default=False,
+                        help="Show an exhaustive list of duplicates found.")
     return parser.parse_args()
+
 
 def merge_dicts(dict1, dict2):
     """
@@ -47,9 +60,11 @@ def merge_dicts(dict1, dict2):
     for key in dict2:
         dict1[key].append(dict2[key])
 
+
 def walk_dir(dir_name, a_dict, max_files):
     """
-    Walks the directory tree under `dir_name`, getting a hash value for each file.
+    Walks the directory tree under `dir_name`, getting a hash value for each
+    file.
 
     Adds hashes to `a_dict`, a dictionary whose keys are hash values, and whose
     values are lists of file names who hash to that value.
@@ -63,6 +78,8 @@ def walk_dir(dir_name, a_dict, max_files):
 
     @return {int} Number of files found.
     """
+    if os.path.basename(dir_name) in EXCLUDED_DIRS:
+        return 0
     files_found = 0
     filelist = os.listdir(dir_name)
     for fname in [os.path.join(dir_name, name) for name in filelist]:
@@ -77,9 +94,10 @@ def walk_dir(dir_name, a_dict, max_files):
 
             a_dict[md5_key].append(fname)
             files_found += 1
-        if max_files > 0 and files_found >= max_files:
+        if files_found >= max_files > 0:
             return files_found
     return files_found
+
 
 def main(args):
     """Set up the duplicate file search, report results."""
@@ -90,11 +108,14 @@ def main(args):
     if args.store is not None:
         print("Here we need to write the persistent storage.")
     print("{0} unique files found in {1}".format(len(sfiles), args.directory))
-    for key in sfiles:
-        if len(sfiles[key]) > 1:
-            print("Duplicates:")
-            for fpath in sfiles[key]:
-                print("   {0}".format(fpath))
+    dupe_keys = [key for key in sfiles if len(sfiles[key]) > 1]
+    print("{} files occur more than once.".format(len(dupe_keys)))
+    if args.show:
+        for key in sfiles:
+            if len(sfiles[key]) > 1:
+                print("Duplicates:")
+                for fpath in sfiles[key]:
+                    print("   {0}".format(fpath))
 
 
 if __name__ == '__main__':

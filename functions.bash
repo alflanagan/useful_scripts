@@ -669,8 +669,19 @@ ssh-init() {
 ## project, and optionally set up the environment appropriately for the
 ## project
 ## need to do this as shell functions as we change state of the shell.
-# PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel/realmatch" "${HOME}/Devel" "${HOME}/Devel/personal" "${HOME}/Devel/personal/hackrva" "${HOME}/Devel/hackrva" "${HOME}/Devel/swift")
-PROJECT_PARENTS=("${HOME}/Devel/atom" "${HOME}/Devel" "${HOME}/Devel/rust" "${HOME}/Devel/personal" "${HOME}/AndroidStudioProjects" "${HOME}/Devel/ruby" "${HOME}/Devel/elections")
+
+# array of the various project directories I have on different systems
+PROJECT_PARENTS=(
+  "${HOME}/Devel/atom" 
+  "${HOME}/Devel" 
+  "${HOME}/Devel/rust" 
+  "${HOME}/Devel/personal" 
+  "${HOME}/AndroidStudioProjects" 
+  "${HOME}/Documents/PlatformIO/Projects/" 
+  "${HOME}/Devel/ruby"
+  "${HOME}/Devel/elections"
+)
+# TODO: restrict array to only directories that actually exist on THIS system
 
 _project_complete() {
 	local -a WORDS
