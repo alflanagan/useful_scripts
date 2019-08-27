@@ -679,6 +679,7 @@ PROJECT_PARENTS=(
   "${HOME}/AndroidStudioProjects" 
   "${HOME}/Documents/PlatformIO/Projects/" 
   "${HOME}/Devel/ruby"
+  "${HOME}/Devel/docker"
   "${HOME}/Devel/elections"
 )
 # TODO: restrict array to only directories that actually exist on THIS system
