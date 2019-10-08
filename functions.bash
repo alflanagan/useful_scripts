@@ -203,53 +203,6 @@ findtextin() {
 	find "$1" -name "$2" -exec grep "$3" '{}' +
 }
 
-find_no_svn() {
-    local find_path="$1"
-    shift
-    find "${find_path}" -name '.svn' -prune -o \( "$@" \)
-}
-
-find_no_svn_grep() {
-    if  [[ $# -eq 0 ]]; then
-        echo "${FUNCNAME[0]} ${TERM_UL_ON}[path-spec]${TERM_UL_OFF} ${TERM_UL_ON}search_term${TERM_UL_OFF} ${TERM_UL_ON}additional_find_options${TERM_UL_OFF}"
-        echo "    grep selected files for lines containing ${TERM_UL_ON}search_term${TERM_UL_OFF}."
-        echo "    ${TERM_UL_ON}additional_find_options${TERM_UL_OFF} are any valid options for find (1)."
-        echo "    ${TERM_UL_ON}path_spec${TERM_UL_OFF} defaults to current directory."
-    else
-        local DIR="."
-        [[ -d "$1" ]] && { DIR="$1"; shift; }
-
-        local search_term="$1"
-        shift
-		local options="-type f"
-		# how to do this space-safe? Build an array?
-		[[ -z "$*" ]] || options="${options} $*"
-		echo find "${DIR}" -name \'.svn\' -prune -o -name \'.git\' -prune -o \( "${options}" \) -exec grep -IH \""${search_term}"\" \'{}\' +
-		find "${DIR}" -name '.svn' -prune -name '.git' -prune -o \( "${options}" \) -exec grep -IH "${search_term}" '{}' +
-
-    fi
-}
-
-find_no_svn_igrep() {
-    if  [[ $# -eq 0 ]]; then
-        echo "${FUNCNAME[0]} ${TERM_UL_ON}[path-spec]${TERM_UL_OFF} ${TERM_UL_ON}search_term${TERM_UL_OFF} ${TERM_UL_ON}additional_find_options${TERM_UL_OFF}"
-        echo "    case-insensitive grep selected files for lines containing ${TERM_UL_ON}search_term${TERM_UL_OFF}."
-        echo "    ${TERM_UL_ON}additional_find_options${TERM_UL_OFF} are any valid options for find (1)."
-    else
-        local DIR="."
-        if [[ -d "$1" ]]; then
-            DIR="$1"
-            shift
-        fi
-
-        local search_term="$1"
-        shift
-        echo find "${DIR}" -name '.svn' -prune -o -name '.git' -prune -o \( "$@" \) -exec grep -iIH \""${search_term}"\" \'{}\' \\\;
-        find "${DIR}" -name '.svn' -prune -o -name '.git' -prune -o \( "$@" \) -exec grep -iIH "${search_term}" '{}' \;
-    fi
-}
-
-
 # -----------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------------
 unalias ll 2>/dev/null
@@ -270,57 +223,6 @@ largest() {
     #or use ls -S
 		# shellcheck disable=SC2012
     ls -l "$@" | sort -r -g -k5
-}
-
-chkswap() {
-    if [[ $# -eq 0 ]]; then
-        echo provide an integer argument to see totals every argument seconds
-        echo this is a summary since last boot.
-    fi
-    vmstat -a -S M "$@"
-}
-
-chkdiskio() {
-    vmstat -d -S M "$@"
-}
-
-chkpartio() {
-#TODO: intelligently get list of partitions
-  for PART in /dev/sda?; do
-    vmstat -p $PART
-	done
-}
-
-execsql() {
-  if  [[ $# -eq 0 ]]; then
-    echo "${FUNCNAME[0]} ${TERM_UL_ON}sql_file${TERM_UL_OFF} ${TERM_UL_ON}additional_psql_options${TERM_UL_OFF}"
-    echo "    Call psql to execute ${TERM_UL_ON}sql_file${TERM_UL_OFF} in database netinformer as user apache."
-  else
-    local SQL_FILE="$1"
-    shift
-    psql -f "${SQL_FILE}" --db=netinformer --user=apache "$@"
-  fi
-}
-
-domysql() {
-    if  [[ $# -eq 0 ]]; then
-        echo "${FUNCNAME[0]} ${TERM_UL_ON}db_name${TERM_UL_OFF} ${TERM_UL_ON}sql_statement${TERM_UL_OFF}"
-        echo "    Execute ${TERM_UL_ON}sql_statement${TERM_UL_OFF} with mysql using database ${TERM_UL_ON}db_name${TERM_UL_OFF}."
-    else
-        mysql -u root -p <<HERE
-use ${1}
-${2}
-HERE
-    fi
-}
-
-execmysql() {
-  if  [[ $# -eq 0 ]]; then
-    echo "${FUNCNAME[0]} ${TERM_UL_ON}sql_file${TERM_UL_OFF}"
-    echo "    Execute SQL statements in ${TERM_UL_ON}sql_file${TERM_UL_OFF} with mysql."
-  else
-    mysql -u root -p < "${1}"
-  fi
 }
 
 llgv() {
@@ -545,12 +447,6 @@ dtree() {
     tree -d "$@"
 }
 
-extra() {
-    #switch from home directory to parallel directory on /mnt/extra
-    #for when I don't want to work through soft links
-    cd "${PWD/\\/home\\/aflanagan/\\/mnt\\/extra}" || return 1
-}
-
 view_html() {
 	  local args_to_url
 	  args_to_url="${*// /%20}"
@@ -584,41 +480,6 @@ truepath () {
 
 cs() {
   python manage.py collectstatic --noinput;
-}
-
-chrome() {
-  google-chrome > ~/log/chrome.log 2>&1 &
-  # chromium-browser > ~/log/chromium.log 2>&1 &
-}
-
-# set up synonym for for firefox if user version present
-# prefer firefox-dev if present
-if [ -x ~/opt/firefox-dev/firefox ]; then
-    firefox() {
-        local FFOX=~/opt/firefox-dev/firefox
-        local FLOG=~/log/user-firefox-dev.log
-
-        if [[ $1 == --help ]]; then
-            "${FFOX}" --help
-        else
-            "${FFOX}" --no-remote "$@" > "${FLOG}" 2>&1 &
-        fi
-    }
-elif [ -x ~/opt/firefox/firefox ]; then
-    firefox() {
-        local "FFOX"=~/opt/firefox/firefox
-        local "FLOG"=~/log/user-firefox.log
-
-        if [[ $1 == --help ]]; then
-            "${FFOX}" --help
-        else
-            "${FFOX}" --no-remote "$@" > "${FLOG}" 2>&1 &
-        fi
-    }
-fi
-
-ecompile() {
-  emacs --batch -f batch-byte-compile "$@"
 }
 
 columns() {
@@ -656,14 +517,6 @@ npm_packages() {
   npm "$@" ls --depth=0 | grep -v npm | cut -d' ' -f2 | grep -v /usr | grep -v '^$' | cut -d'@' -f1
 }
 
-ssh-init() {
-	# eval "$(ssh-agent)"
-	# shouldn't need ssh-agent, gnome-keyring-daemon should set up SSH_AUTH_SOCK
-	ssh-add
-	ssh-add ~/.ssh/mgvwdm003_id_rsa
-	ssh-add ~/.ssh/id_rsa.personal
-}
-
 ####################### Project functions ##########################
 ## code to provide a "project" command, that will CD to a development
 ## project, and optionally set up the environment appropriately for the
@@ -672,15 +525,8 @@ ssh-init() {
 
 # array of the various project directories I have on different systems
 PROJECT_PARENTS=(
-  "${HOME}/Devel/atom" 
-  "${HOME}/Devel" 
-  "${HOME}/Devel/rust" 
-  "${HOME}/Devel/personal" 
-  "${HOME}/AndroidStudioProjects" 
-  "${HOME}/Documents/PlatformIO/Projects/" 
-  "${HOME}/Devel/ruby"
-  "${HOME}/Devel/docker"
-  "${HOME}/Devel/elections"
+  "${HOME}/Devel"
+  "${HOME}/Devel/sdl"
 )
 # TODO: restrict array to only directories that actually exist on THIS system
 
@@ -695,10 +541,10 @@ _project_complete() {
 	# python virtual environments
 	# TODO: figure out how to filter out pipenv environments
 	# associated with a project directory
-	for WORD in $(workon)
-	do
-		WORDS[${#WORDS[*]}]="${WORD}"
-	done
+#	for WORD in $(workon)
+#	do
+#		WORDS[${#WORDS[*]}]="${WORD}"
+#	done
 	for DIR in ${PROJECT_PARENTS[*]}
 	do
 		for FNAME in "${DIR}"/*
@@ -739,16 +585,16 @@ _project_find_dir() {
 
 	# if project is a python "virtual environment", workon does setup
     # return "workon" as flag instead of directory name
-	local venv_dirs
-	venv_dirs=$(workon | tr '\n' '|')
-	if [[ -n ${venv_dirs} ]]; then
-		venv_dirs=${venv_dirs:0:-1}
+#	local venv_dirs
+#	venv_dirs=$(workon | tr '\n' '|')
+#	if [[ -n ${venv_dirs} ]]; then
+#		venv_dirs=${venv_dirs:0:-1}
         # borrow pattern-matching in case statement; probably better way to do it
-		case "$1" in "${venv_dirs}")
-             echo "workon"
-             return;;
-        esac
-	fi
+#		case "$1" in "${venv_dirs}")
+#             echo "workon"
+#             return;;
+#        esac
+#	fi
 
 	# search project parent directories, one at a time
 	for DIR in ${PROJECT_PARENTS[*]}
@@ -786,18 +632,18 @@ USAGE
 
   target_dir=$(_project_find_dir "$@")
 
-  if [[ $target_dir == "workon" ]]; then
+  #if [[ $target_dir == "workon" ]]; then
     # if project is a python "virtual environment", workon does setup
     # we just need to say 'workon project_name'
-    local venv_dirs
-    venv_dirs=$(workon | tr '\n' '|')
+#    local venv_dirs
+#    venv_dirs=$(workon | tr '\n' '|')
     #bash parameter substitution with pattern doesn't work on space (??)
     # ${venv_dirs/ /|}
-    if [[ -n ${venv_dirs} ]]; then  # skip if none!
-      venv_dirs=${venv_dirs:0:-1}  # strip final '|'
-      eval "case $1 in ${venv_dirs}) workon $1; return;; esac"
-    fi
-  fi
+#    if [[ -n ${venv_dirs} ]]; then  # skip if none!
+#      venv_dirs=${venv_dirs:0:-1}  # strip final '|'
+#      eval "case $1 in ${venv_dirs}) workon $1; return;; esac"
+#    fi
+#  fi
 
   # if we are in virtual environment, deactivate it
   [[ ! -z ${VIRTUAL_ENV} ]] && deactivate
