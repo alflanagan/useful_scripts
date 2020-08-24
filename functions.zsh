@@ -583,6 +583,7 @@ USAGE
 
   if [[ -z "${target_dir}" ]]; then
     echo "I can't find project $1, sorry!"
+    unset PROJECT
     return 1
   else
     # in PHP Composer project dir??
@@ -597,6 +598,7 @@ USAGE
     if [[ -d "${target_dir}/bin" ]]; then
       pathmunge "${target_dir}/bin" before
     fi
+    export PROJECT=$1
     # Problem with all the above: PATH changes don't go away.
     # Have never had that be an issue in practice
     cd "${target_dir}" || return 1
