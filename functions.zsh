@@ -1,6 +1,8 @@
 #!/usr/bin/env zsh
-# -*- coding: utf-8-unix -*-
 #above more for documentation, since normally this file must be sourced
+# shellcheck shell=bash
+# ignore shellcheck flags of valid zsh syntax (sigh)
+# -*- coding: utf-8-unix -*-
 
 #put some useful terminal escapes in shell variables
 #TERM_BOLD_ON=$(tput -T xterm bold)
@@ -471,7 +473,7 @@ mkcd () {
 }
 
 maketasks () {
-  grep -e '^[a-zA-Z].\+:' Makefile | grep -v ':='
+  grep -e '^[a-zA-Z].\+:' Makefile | grep -v '='
 }
 
 
