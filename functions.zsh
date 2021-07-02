@@ -476,7 +476,6 @@ maketasks () {
   grep -e '^[a-zA-Z].\+:' Makefile | grep -v '='
 }
 
-
 # attempt to make vmd work regardless of active node, etc.
 vmd () {
   # normally functions don't create subshell, here we need one so we don't change user's
