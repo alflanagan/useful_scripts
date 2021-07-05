@@ -17,16 +17,17 @@ export TERM_BOLD_ON TERM_BOLD_OFF TERM_UL_OFF TERM_UL_ON
 #a lot of useful zsh functions
 pathmunge() {
 	[[ $# -gt 0 ]] || { cat <<-EOF
-	Usage: ${FUNCNAME[0]} dir_path [before|after]
-		   adds dir_path to PATH variable
-		   adds to end unless 'before' specified.
-	EOF
-						return 1
-						}
+    Usage: ${0} dir_path [before|after]
+        adds dir_path to PATH variable
+        adds to end unless 'before' specified.
+EOF
+    return 1
+	}
 	[[ -d "$1" ]] || {
-		echo "${FUNCNAME[0]} ERROR: path not found [$1]" >&2
+		echo "${0} ERROR: path not found [$1]" >&2
 		return 2
 	}
+  (( ${path[(I)$1]} )) || \
 	if [[ $# -gt 1 && "$2" == 'before' ]]; then
 		path=("$1" $path)
 	else
