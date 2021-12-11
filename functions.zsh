@@ -29,9 +29,10 @@ EOF
 	}
   (( ${path[(I)$1]} )) || \
 	if [[ $# -gt 1 && "$2" == 'before' ]]; then
+    # not sure how this behaves with spaces in path
 		path=("$1" $path)
 	else
-		path+="$1"
+		path+=("$1")
 	fi
 	# changes to PATH may not be respected for cached command lookups
 	hash -r
@@ -171,7 +172,7 @@ llgv() {
 
 every() {
 #TODO: detect, handle bad input
-#SEE: watch (1)
+#SEE: watch (1) (not always available)
     if [[ $# -lt 3 ]]; then
         echo "Usage: ${FUNCNAME[0]} _seconds_ do _command_"
         echo "       where _seconds_ is time, and _command_ is a shell command"
@@ -255,7 +256,7 @@ h2b() {
 
 # tempting to create h2o(), but would it ever get used?
 # warning shouldn't apply to global functions to be used outside of script.
-# but how to tell shellcheck?
+# but how to tell shellcheck? and why only some functions?
 # shellcheck disable=SC2120
 o2d() {
   [[ $# -ne 1 ]] && {
@@ -606,25 +607,10 @@ USAGE
   fi
 
   basedir=$(basename "$target_dir")
-  pyenv virtualenvs --bare | grep -q "${basedir}" && pyenv activate "${basedir}"
+  pyenv virtualenvs --bare | grep -q "${basedir}" && pyenv virtualenv activate "${basedir}"
   [[ -f "${target_dir}"/.nvmrc ]] && nvm use
 
 }  # project()
-
-studio() {
-  local studio_log=~/log/android_studio.log
-  local fix_file=~/AndroidStudioProjects/android-studio.fix
-  # override global KOTLIN_HOME so studio uses its own version
-  # OK, so far no attempt has fixed incompatibility between Android Studio and command-line
-  # kotlin installed by sdk. Sigh.
-  # export KOTLIN_HOME="${HOME}/opt/android-studio/plugins/Kotlin/kotlinc"
-
-  if [[ -f "${fix_file}" ]]; then
-    STUDIO_VM_OPTIONS="${fix_file}" studio.sh > "${studio_log}" 2>&1 &
-  else
-    studio.sh > "${studio_log}" 2>&1 &
-  fi
-}
 
 trash-size() {
   du -sh ~/.local/share/Trash
@@ -636,12 +622,6 @@ with_commas () {
         return 1
     fi
     python3 -c "print('{:,}'.format($1), end='')"
-}
-
-avd() {
-#    ~/Android/Sdk/emulator/emulator @Nexus_5X_API_27_Play_ > ~/log/avd.log 2>&1 &
-#    ~/Android/Sdk/emulator/emulator @Nexus_One_API_26_Intel_ > ~/log/avd.log 2>&1 &
-    ~/Android/Sdk/emulator/emulator @testAVD > ~/log/avd.log 2>&1 &
 }
 
 kts() {
@@ -661,14 +641,6 @@ mkcd () {
     ../*) (cd .. && mkdir -p "${1#.}") && cd "$1";;
     *) mkdir -p "./$1" && cd "./$1";;
   esac
-}
-
-sdl-web () {
-    project sdl-web
-    pyenv activate livio
-    nvm use
-    docker-compose up -d
-    honcho start
 }
 
 maketasks () {
