@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+exec findmnt -t btrfs,vfat,fuseblk,iso9660,ext2,ext3,ext4,xfs

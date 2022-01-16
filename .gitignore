@@ -94,3 +94,11 @@ gdx-*
 __init__.py
 coverage
 utl_validate
+android-studio/
+clion
+esptool
+mpy-cross*
+pycharm
+rubymine
+webstorm
+studio
