@@ -1,15 +1,9 @@
 #!/usr/bin/env dash
 
-EC2_INSTANCE=ec2-54-210-158-21.compute-1.amazonaws.com
-USERNAME=centos
+EC2_INSTANCE=ec2-3-80-156-198.compute-1.amazonaws.com
+USERNAME=ubuntu
 CERTFILE=${HOME}/.ssh/basic-web-server-alloydflanagan.pem
 
 echo "ssh -i ${CERTFILE} ${USERNAME}@${EC2_INSTANCE}"
 echo "----------------------------------------------------------------------------------------------"
-# ssh -i ${CERTFILE} ${USERNAME}@${EC2_INSTANCE}
-mosh --ssh="ssh -i ${CERTFILE}" -p 60002 "${USERNAME}@${EC2_INSTANCE}"
-ERR=$?
-if [ $ERR -ne 0 ]; then
-	echo "error using mosh, trying ssh directly:"
-	ssh -i "${CERTFILE}" "${USERNAME}@${EC2_INSTANCE}"
-fi
+ssh -i ${CERTFILE} ${USERNAME}@${EC2_INSTANCE}
