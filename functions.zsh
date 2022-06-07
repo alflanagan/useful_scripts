@@ -365,11 +365,16 @@ if [[ ! -f /etc/debian_release ]]; then
 	}
 fi
 
-if [[ "$(uname)" != "darwin" ]]; then
+if [[ "$(uname)" != "darwin" && "$(uname)" != "Darwin" ]]; then
   wing() {
       #verbose causes errors to log, etc.
       /usr/bin/wing --verbose "$@" > "${HOME}/log/wing.log" 2>&1 &
   }
+else
+	wing() {
+		[[ -d "${HOME}/log" ]] || mkdir "${HOME}/log" || echo "can't create log directory!!" || return
+		/Applications/Wing\ Pro.app/Contents/MacOS/wing --verbose "$@" > "${HOME}/log/wing.log" 2>&1 &
+	}
 fi
 
 #get list of files in a zip, dropping all info except file names
@@ -467,7 +472,7 @@ _project_complete() {
 #	do
 #		WORDS[${#WORDS[*]}]="${WORD}"
 #	done
-	for DIR in ${PROJECT_PARENTS[*]}
+	for DIR in "${PROJECT_PARENTS[@]}"
 	do
 		for FNAME in "${DIR}"/*
 		do
@@ -477,7 +482,7 @@ _project_complete() {
 		done
 	done
 
-  for DIR in ${GIT_PARENTS[*]}
+  for DIR in "${GIT_PARENTS[@]}"
   do
     for PROJECT in $(get_project_names_from_git "${DIR}")
     do
@@ -524,7 +529,7 @@ find_git_project() {
 find_all_git_project() {
 	local proj_name="$1"
 	local proj_dir
-	for DIR in ${GIT_PARENTS[*]}
+	for DIR in "${GIT_PARENTS[@]}"
 	do
 		proj_dir=$(find_git_project "${DIR}" "${proj_name}")
 		if [[ -n "${proj_dir}" ]]; then
@@ -541,7 +546,7 @@ find_all_git_project() {
 # nothing -- could not find directory
 _project_find_dir() {
 	# search project parent directories, one at a time
-	for DIR in ${PROJECT_PARENTS[*]}
+	for DIR in "${PROJECT_PARENTS[@]}"
 	do
 		if [[ -d "${DIR}/$1" ]]; then
 			echo "${DIR}/$1"
@@ -645,6 +650,25 @@ mkcd () {
 
 maketasks () {
   grep -e '^[a-zA-Z].\+:' Makefile | grep -v ':='
+}
+
+
+# attempt to make vmd work regardless of active node, etc.
+vmd () {
+  # normally functions don't create subshell, here we need one so we don't change user's
+  # active node version
+  (nvm use stable; npx vmd "$@")
+}
+
+startblack () {
+    nohup blackd > ~/logs/blackd.log 2>&1 & sleep 1; cat ~/logs/blackd.log
+}
+
+print_virtenv () {
+	if [[ -n "${VIRTUAL_ENV}" ]]
+	then
+		echo "($(basename "${VIRTUAL_ENV}"))"
+	fi
 }
 
 # Local Variables:
