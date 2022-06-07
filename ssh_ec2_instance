@@ -1,6 +1,6 @@
 #!/usr/bin/env dash
 
-EC2_INSTANCE=ec2-3-80-156-198.compute-1.amazonaws.com
+EC2_INSTANCE=ec2-3-91-53-244.compute-1.amazonaws.com
 USERNAME=ubuntu
 CERTFILE=${HOME}/.ssh/basic-web-server-alloydflanagan.pem
 
