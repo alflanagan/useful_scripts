@@ -612,7 +612,8 @@ USAGE
   fi
 
   basedir=$(basename "$target_dir")
-  pyenv virtualenvs --bare | grep -q "${basedir}" && pyenv virtualenv activate "${basedir}"
+  # below not needed if you use `pyenv local` to set the version for the directory
+  # pyenv virtualenvs --bare | grep -q "${basedir}" && pyenv virtualenv activate "${basedir}"
   [[ -f "${target_dir}"/.nvmrc ]] && nvm use
 
 }  # project()
