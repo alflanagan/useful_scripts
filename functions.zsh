@@ -448,7 +448,7 @@ npm_packages() {
 # array of the various project directories I have on different systems
 # directories for which each child directory is a project
 PROJECT_PARENTS=(
-  "${HOME}/Devel/typescript"
+  # "${HOME}/Devel/typescript"
 )
 
 # directories whose descendants with a .git subdirectory are projects
@@ -615,6 +615,8 @@ USAGE
   # below not needed if you use `pyenv local` to set the version for the directory
   # pyenv virtualenvs --bare | grep -q "${basedir}" && pyenv virtualenv activate "${basedir}"
   [[ -f "${target_dir}"/.nvmrc ]] && nvm use
+
+  [[ -f ./project-init.sh ]] &&  source ./project-init.sh
 
 }  # project()
 
