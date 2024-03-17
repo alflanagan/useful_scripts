@@ -1,8 +1,8 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env zsh -x
+# -*- coding: utf-8-unix -*-
 #above more for documentation, since normally this file must be sourced
 # shellcheck shell=bash
 # ignore shellcheck flags of valid zsh syntax (sigh)
-# -*- coding: utf-8-unix -*-
 
 #put some useful terminal escapes in shell variables
 #TERM_BOLD_ON=$(tput -T xterm bold)
@@ -14,7 +14,8 @@ TERM_ITAL_OFF=$(tput -T xterm ritm)
 TERM_UL_ON=$(tput -T xterm smul)
 TERM_UL_OFF=$(tput -T xterm rmul)
 
-export TERM_BOLD_ON TERM_BOLD_OFF TERM_UL_OFF TERM_UL_ON
+LOG_DIR=~/log
+export TERM_BOLD_ON TERM_BOLD_OFF TERM_UL_OFF TERM_UL_ON LOG_DIR
 
 #a lot of useful zsh functions
 pathmunge() {
@@ -370,12 +371,11 @@ fi
 if [[ "$(uname)" != "darwin" && "$(uname)" != "Darwin" ]]; then
   wing() {
       #verbose causes errors to log, etc.
-      /usr/bin/wing --verbose "$@" > "${HOME}/log/wing.log" 2>&1 &
+      /usr/bin/wing --verbose "$@" > "${LOG_DIR}/wing.log" 2>&1 &
   }
 else
 	wing() {
-		[[ -d "${HOME}/log" ]] || mkdir "${HOME}/log" || echo "can't create log directory!!" || return
-		/Applications/Wing\ Pro.app/Contents/MacOS/wing --verbose "$@" > "${HOME}/log/wing.log" 2>&1 &
+		/Applications/Wing\ Pro.app/Contents/MacOS/wing --verbose "$@" > "${DIR_LOG}/wing.log" 2>&1 &
 	}
 fi
 
@@ -663,7 +663,7 @@ vmd () {
 }
 
 startblack () {
-    nohup blackd > ~/logs/blackd.log 2>&1 & sleep 1; cat ~/logs/blackd.log
+    nohup blackd > "${LOG_DIR}/blackd.log" 2>&1 & sleep 1; cat "${LOG_DIR}/blackd.log"
 }
 
 print_virtenv () {
@@ -671,6 +671,27 @@ print_virtenv () {
 	then
 		echo "($(basename "${VIRTUAL_ENV}"))"
 	fi
+}
+
+e() {
+  SOCKET=/tmp/emacs$(id -u)/server
+
+  if [[ "$1" = "--help" ]]; then
+      emacs --help
+  elif [[ -z "${LOG_DIR}"  || ! -d "${LOG_DIR}" ]]; then
+      echo "NO LOGGING: env variable $LOG_DIR is not valid!" >&2
+  elif [[ -S "${SOCKET}"  ]]; then
+      date >> "${LOG_DIR}/emacsclient.log"
+      # don't rely on emacsclient starting a daemon, it only does terminal screen
+      emacsclient -s "${SOCKET}" -a emacs -n "$@" >> "${LOG_DIR}/emacsclient.log" 2>&1
+  else
+      date >> "${LOG_DIR}/emacs.log"
+      emacs "$@" >> "${LOG_DIR}/emacs.log" 2>&1 &
+  fi
+}
+
+ec() {
+    emacsclient -n -r "$@"
 }
 
 # Local Variables:
