@@ -2,6 +2,11 @@
 # -*- coding: utf-8-unix -*-
 #above more for documentation, since normally this file must be sourced
 
+# bash "strict mode"
+# see http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -euo pipefail
+IFS=$'\n\t'
+
 #put some useful terminal escapes in shell variables
 #TERM_BOLD_ON=$(tput -T xterm bold)
 #TERM_BOLD_OFF=$(tput -T xterm dim)
