@@ -1,6 +1,6 @@
-#!/usr/bin/env zsh -x
+#!/usr/bin/env zsh
 # -*- coding: utf-8-unix -*-
-#above more for documentation, since normally this file must be sourced
+#above '#!' line more for documentation, since normally this file must be sourced
 # shellcheck shell=bash
 # ignore shellcheck flags of valid zsh syntax (sigh)
 
@@ -368,17 +368,6 @@ if [[ ! -f /etc/debian_release ]]; then
 	}
 fi
 
-if [[ "$(uname)" != "darwin" && "$(uname)" != "Darwin" ]]; then
-  wing() {
-      #verbose causes errors to log, etc.
-      /usr/bin/wing --verbose "$@" > "${LOG_DIR}/wing.log" 2>&1 &
-  }
-else
-	wing() {
-		/Applications/Wing\ Pro.app/Contents/MacOS/wing --verbose "$@" > "${DIR_LOG}/wing.log" 2>&1 &
-	}
-fi
-
 #get list of files in a zip, dropping all info except file names
 zip_list() {
     unzip -l "$@" | cut -c 31- | tail -n +4  | head -n -2
@@ -450,13 +439,11 @@ npm_packages() {
 # array of the various project directories I have on different systems
 # directories for which each child directory is a project
 PROJECT_PARENTS=(
-  "${HOME}/Devel/typescript"
 )
 
 # directories whose descendants with a .git subdirectory are projects
 GIT_PARENTS=(
   "${HOME}/Devel"
-  "${HOME}/bin"
 )
 
 # TODO: restrict array to only directories that actually exist on THIS system
@@ -502,7 +489,27 @@ get_project_names_from_git() {
     echo "${FUNCNAME[0]}" requires one argument -- the parent directory
     return 1
   fi
-  for REPO in $(find "${root_dir}" -name node_modules -prune -o -type d -name .git -print)
+  # this find command is clearly very site-specific. need a list of directories
+  # which are always skipped (like node_modules/) and a custom list of
+  # directories specific to user's filesystem
+  for REPO in $(find "${root_dir}"
+				-name site-packages -prune -o \
+				-name node_modules -prune -o \
+				-name pico-sdk -prune -o \
+				-name gems -prune -o \
+				-name target -prune -o \
+				-name tmp -prune -o \
+				-name cache -prune -o \
+				-name __pycache__ -prune -o \
+				-name builds -prune -o \
+				-name build -prune -o \
+				-name public -prune -o \
+				-name types -prune -o \
+				-name temp -prune -o \
+				-name 'static*' -prune -o \
+				-name '.*' -not -name .git -prune -o \
+				-path '*/.git/*' -prune -o \
+				-type d -name .git -print)
   do
     basename "$(dirname "$REPO")"
   done
@@ -518,7 +525,7 @@ find_git_project() {
   fi
   local root_dir="$1"
   local proj_name="$2"
-  for REPO in $(find "${root_dir}" -name node_modules -prune -o -type d -name .git -print)
+  for REPO in $(find "${root_dir}" -name site-packages -prune -o -name node_modules -prune -o -type d -name .git -print)
   do
     if [[ $(basename "$(dirname "${REPO}")") == "${proj_name}" ]]; then
       dirname "${REPO}"
@@ -561,6 +568,7 @@ _project_find_dir() {
 # master command to switch current directory to project directory
 # can be customized per directory with additional setup
 # TODO: look for .project file in target directory, use settings
+# TODO: if directory has a Pipfile, run 'pipenv shell' automatically
 project() {
   local target_dir
   local basedir
@@ -663,7 +671,9 @@ vmd () {
 }
 
 startblack () {
-    nohup blackd > "${LOG_DIR}/blackd.log" 2>&1 & sleep 1; cat "${LOG_DIR}/blackd.log"
+    nohup blackd > ~/log/blackd.log 2>&1 &
+	sleep 1
+	cat ~/log/blackd.log
 }
 
 print_virtenv () {
@@ -690,9 +700,12 @@ e() {
   fi
 }
 
-ec() {
-    emacsclient -n -r "$@"
+# start emacsclient from emacs-plus in background w/graphical window
+ec () {
+       emacsclient -r -n "$@" >> ~/log/emacsclient.log # 2>&1
+       # open -a /opt/homebrew/Cellar/emacs-plus@30/30.0.50/Emacs.app -r "$@"
 }
+
 
 # Local Variables:
 # indent-tabs-mode: t
