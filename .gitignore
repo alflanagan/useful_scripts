@@ -111,3 +111,7 @@ wing
 wp
 wp-cli.phar
 wp-completion.bash
+# scripts for accessing external servers, possibly w/sensitive data
+ssh_*
+.DS_Store
+sftp_*
