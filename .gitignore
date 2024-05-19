@@ -115,3 +115,12 @@ wp-completion.bash
 ssh_*
 .DS_Store
 sftp_*
+mongo*
+bsondump
+cmaked
+cura
+luksOpen.sh
+m-uart
+m-usb
+ocdg
+resize-home.sh
