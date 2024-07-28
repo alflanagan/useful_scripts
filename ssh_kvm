@@ -1,0 +1,9 @@
+#!/usr/bin/env dash
+
+USERNAME=lloyd
+CERTFILE=${HOME}/.ssh/id_rsa.personal
+HOSTNAME=my-cloud-server
+
+echo "ssh -i ${CERTFILE} ${USERNAME}@${HOSTNAME}"
+echo "----------------------------------------------------------------------------------------------"
+ssh -i ${CERTFILE} ${USERNAME}@${HOSTNAME}
