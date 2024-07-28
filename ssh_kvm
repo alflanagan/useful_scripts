@@ -2,7 +2,8 @@
 
 USERNAME=lloyd
 CERTFILE=${HOME}/.ssh/id_rsa.personal
-HOSTNAME=my-cloud-server
+HOSTNAME=SLICE-152624
+# HOSTNAME=107.189.11.203
 
 echo "ssh -i ${CERTFILE} ${USERNAME}@${HOSTNAME}"
 echo "----------------------------------------------------------------------------------------------"
