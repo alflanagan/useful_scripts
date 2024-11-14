@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-# -*- coding: utf-8-unix -*-
+# -*- coding: utf-8-unix; mode: bash-ts -*-
 #above '#!' line more for documentation, since normally this file must be sourced
 # shellcheck shell=bash
 # ignore shellcheck flags of valid zsh syntax (sigh)
@@ -16,6 +16,44 @@ TERM_UL_OFF=$(tput -T xterm rmul)
 
 LOG_DIR=~/log
 export TERM_BOLD_ON TERM_BOLD_OFF TERM_UL_OFF TERM_UL_ON LOG_DIR
+
+bldpath() {
+	# bldpath VARNAME DIR [before|after]
+	# VARNAME names an environment variable formatted like PATH (e.g. PATH,
+	#   LD_LIBRARY_PATH, PYTHONPATH)
+	# DIR is a directory which will be added to the variable named by VARNAME
+	# but only if it's not already present
+	# no validation is done on DIR: don't care if it doesn't exist
+	# DIR is added to the end of the variable unless third argument is "before"
+	local -r VARNAME="$1" DIR="$2"
+	local -l POS=after
+	[[ -n "$3" ]] && POS="$3"
+
+	[[ ${POS} == before || ${POS} == after ]] || {
+		echo 'Optional third argument must be "before" or "after" (default is "after").'
+		return 1
+	}
+
+	#local -r SHOW=echo  #uncomment this for debug output
+	local -r SHOW=:
+	#BRACKETED_PATH makes case statement simpler
+	local -r BRACKETED_PATH=":${(P)VARNAME}:"
+	case "${BRACKETED_PATH}" in
+		*:${DIR}:*)
+			${SHOW} "${DIR} already in ${VARNAME}, doing nothing."
+			;;
+		::)
+			${SHOW} "${VARNAME} not set, setting it to ${DIR}"
+			export "${VARNAME}"="${DIR}";;
+		*)
+			${SHOW} "${DIR} not in ${VARNAME}, adding it ${POS} existing value."
+			if [[ ${POS} == after ]]; then
+				export "${VARNAME}"="${(P)VARNAME}":"${DIR}"
+			else
+				export "${VARNAME}"="${DIR}":"${(P)VARNAME}"
+			fi;;
+	esac
+}
 
 #a lot of useful zsh functions
 pathmunge() {
@@ -538,6 +576,8 @@ find_git_project() {
 find_all_git_project() {
 	local proj_name="$1"
 	local proj_dir
+    # TODO: optimization: if current dir matches project name, skip `find` and just set up environment
+
 	for DIR in "${GIT_PARENTS[@]}"
 	do
 		proj_dir=$(find_git_project "${DIR}" "${proj_name}")
@@ -549,7 +589,7 @@ find_all_git_project() {
 }
 
 # Writes to stdout one of:
-# workon -- matched a workon (py virtual environemtn) name
+# workon -- matched a workon (py virtual environment) name
 # workon replaced by pyenv on this system?
 # directory -- matched existing directory
 # nothing -- could not find directory
@@ -703,7 +743,7 @@ e() {
 
 # meanwhile there's this which doesn't use a server
 em () {
-	nohup emacs "$@" > ${LOG_DIR}/emacs.log 2>&1 &
+	emacs --debug-init "$@" > ${LOG_DIR}/emacs.log 2>&1 &|
 }
 
 
