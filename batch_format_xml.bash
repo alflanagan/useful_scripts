@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# bash "strict mode"
+# see http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -euo pipefail
+
+IFS=$'\n\t'
+
 if [[ -z $1 ]]; then
     FILES=*.xml
 else
