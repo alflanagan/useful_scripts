@@ -476,8 +476,11 @@ npm_packages() {
 
 # array of the various project directories I have on different systems
 # directories for which each child directory is a project
-PROJECT_PARENTS=(
-)
+# PROJECT_PARENTS=(
+# 	/Users/adrianflanagan/Devel/personal/go
+# 	/Users/adrianflanagan/Devel/personal/web
+# 	/Users/adrianflanagan/Devel/personal/micro
+# )
 
 # directories whose descendants with a .git subdirectory are projects
 GIT_PARENTS=(
@@ -530,7 +533,7 @@ get_project_names_from_git() {
   # this find command is clearly very site-specific. need a list of directories
   # which are always skipped (like node_modules/) and a custom list of
   # directories specific to user's filesystem
-  for REPO in $(find "${root_dir}"
+  for REPO in $(find "${root_dir}" \
 				-name site-packages -prune -o \
 				-name node_modules -prune -o \
 				-name pico-sdk -prune -o \
@@ -547,6 +550,7 @@ get_project_names_from_git() {
 				-name 'static*' -prune -o \
 				-name '.*' -not -name .git -prune -o \
 				-path '*/.git/*' -prune -o \
+				-name '.venv' -prune -o \
 				-type d -name .git -print)
   do
     basename "$(dirname "$REPO")"
@@ -637,6 +641,8 @@ USAGE
 
   # if we are in virtual environment, deactivate it
   [[ -n ${VIRTUAL_ENV} ]] && pyenv deactivate
+  # likewise for mise
+  mise deactivate
 
   if [[ -z "${target_dir}" ]]; then
     echo "I can't find project $1, sorry!"
@@ -664,7 +670,6 @@ USAGE
   basedir=$(basename "$target_dir")
   # below not needed if you use `pyenv local` to set the version for the directory
   # pyenv virtualenvs --bare | grep -q "${basedir}" && pyenv virtualenv activate "${basedir}"
-  [[ -f "${target_dir}"/.nvmrc ]] && nvm use
 
 }  # project()
 
@@ -743,9 +748,16 @@ e() {
 
 # meanwhile there's this which doesn't use a server
 em () {
+	emacs "$@" > ${LOG_DIR}/emacs.log 2>&1 &|
+}
+
+emdebug () {
 	emacs --debug-init "$@" > ${LOG_DIR}/emacs.log 2>&1 &|
 }
 
+prelude() {
+	emacs --debug-init --init-dir ~/config/.emacs/prelude "$@" > ${LOG_DIR}/emacs.log 2>&1 &
+}
 
 # Local Variables:
 # indent-tabs-mode: t
