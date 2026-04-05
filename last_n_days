@@ -1,0 +1,17 @@
+#!/bin/sh
+[ -n "$1" ] || echo "$(basename ${0}): Provide a time specifier for find parameter -Btime: [Np]+"
+[ -n "$1" ] || echo "     where N is an integer and p=s|m|h|d|w (diff. units may be combined)"
+
+
+
+[ -n "$1" ] && find ~ \
+    -name .vscode -prune -o \
+    -name .Trash -prune -o \
+    -name  .pyenv -prune -o \
+    -name  Applications -prune -o \
+    -name  '*cache*' -prune -o \
+    -name  .npm -prune -o \
+    -name  Library -prune -o \
+    -name  node_modules -prune -o \
+    -name  .git -prune -o \
+    -type f -Btime -"$1" -ls 
