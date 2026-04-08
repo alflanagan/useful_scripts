@@ -1,6 +1,8 @@
 #!/usr/bin/env zsh
-# -*- coding: utf-8-unix -*-
-#above more for documentation, since normally this file must be sourced
+# -*- coding: utf-8-unix; mode: bash-ts -*-
+#above '#!' line more for documentation, since normally this file must be sourced
+# shellcheck shell=bash
+# ignore shellcheck flags of valid zsh syntax (sigh)
 
 #put some useful terminal escapes in shell variables
 #TERM_BOLD_ON=$(tput -T xterm bold)
@@ -12,7 +14,46 @@ TERM_ITAL_OFF=$(tput -T xterm ritm)
 TERM_UL_ON=$(tput -T xterm smul)
 TERM_UL_OFF=$(tput -T xterm rmul)
 
-export TERM_BOLD_ON TERM_BOLD_OFF TERM_UL_OFF TERM_UL_ON
+LOG_DIR=~/log
+export TERM_BOLD_ON TERM_BOLD_OFF TERM_UL_OFF TERM_UL_ON LOG_DIR
+
+bldpath() {
+	# bldpath VARNAME DIR [before|after]
+	# VARNAME names an environment variable formatted like PATH (e.g. PATH,
+	#   LD_LIBRARY_PATH, PYTHONPATH)
+	# DIR is a directory which will be added to the variable named by VARNAME
+	# but only if it's not already present
+	# no validation is done on DIR: don't care if it doesn't exist
+	# DIR is added to the end of the variable unless third argument is "before"
+	local -r VARNAME="$1" DIR="$2"
+	local -l POS=after
+	[[ -n "$3" ]] && POS="$3"
+
+	[[ ${POS} == before || ${POS} == after ]] || {
+		echo 'Optional third argument must be "before" or "after" (default is "after").'
+		return 1
+	}
+
+	#local -r SHOW=echo  #uncomment this for debug output
+	local -r SHOW=:
+	#BRACKETED_PATH makes case statement simpler
+	local -r BRACKETED_PATH=":${(P)VARNAME}:"
+	case "${BRACKETED_PATH}" in
+		*:${DIR}:*)
+			${SHOW} "${DIR} already in ${VARNAME}, doing nothing."
+			;;
+		::)
+			${SHOW} "${VARNAME} not set, setting it to ${DIR}"
+			export "${VARNAME}"="${DIR}";;
+		*)
+			${SHOW} "${DIR} not in ${VARNAME}, adding it ${POS} existing value."
+			if [[ ${POS} == after ]]; then
+				export "${VARNAME}"="${(P)VARNAME}":"${DIR}"
+			else
+				export "${VARNAME}"="${DIR}":"${(P)VARNAME}"
+			fi;;
+	esac
+}
 
 #a lot of useful zsh functions
 pathmunge() {
@@ -365,18 +406,6 @@ if [[ ! -f /etc/debian_release ]]; then
 	}
 fi
 
-if [[ "$(uname)" != "darwin" && "$(uname)" != "Darwin" ]]; then
-  wing() {
-      #verbose causes errors to log, etc.
-      /usr/bin/wing --verbose "$@" > "${HOME}/log/wing.log" 2>&1 &
-  }
-else
-	wing() {
-		[[ -d "${HOME}/log" ]] || mkdir "${HOME}/log" || echo "can't create log directory!!" || return
-		/Applications/Wing\ Pro.app/Contents/MacOS/wing --verbose "$@" > "${HOME}/log/wing.log" 2>&1 &
-	}
-fi
-
 #get list of files in a zip, dropping all info except file names
 zip_list() {
     unzip -l "$@" | cut -c 31- | tail -n +4  | head -n -2
@@ -447,14 +476,15 @@ npm_packages() {
 
 # array of the various project directories I have on different systems
 # directories for which each child directory is a project
-PROJECT_PARENTS=(
-  "${HOME}/Devel/typescript"
-)
+# PROJECT_PARENTS=(
+# 	/Users/adrianflanagan/Devel/personal/go
+# 	/Users/adrianflanagan/Devel/personal/web
+# 	/Users/adrianflanagan/Devel/personal/micro
+# )
 
 # directories whose descendants with a .git subdirectory are projects
 GIT_PARENTS=(
   "${HOME}/Devel"
-  "${HOME}/bin"
 )
 
 # TODO: restrict array to only directories that actually exist on THIS system
@@ -500,7 +530,28 @@ get_project_names_from_git() {
     echo "${FUNCNAME[0]}" requires one argument -- the parent directory
     return 1
   fi
-  for REPO in $(find "${root_dir}" -name node_modules -prune -o -type d -name .git -print)
+  # this find command is clearly very site-specific. need a list of directories
+  # which are always skipped (like node_modules/) and a custom list of
+  # directories specific to user's filesystem
+  for REPO in $(find "${root_dir}" \
+				-name site-packages -prune -o \
+				-name node_modules -prune -o \
+				-name pico-sdk -prune -o \
+				-name gems -prune -o \
+				-name target -prune -o \
+				-name tmp -prune -o \
+				-name cache -prune -o \
+				-name __pycache__ -prune -o \
+				-name builds -prune -o \
+				-name build -prune -o \
+				-name public -prune -o \
+				-name types -prune -o \
+				-name temp -prune -o \
+				-name 'static*' -prune -o \
+				-name '.*' -not -name .git -prune -o \
+				-path '*/.git/*' -prune -o \
+				-name '.venv' -prune -o \
+				-type d -name .git -print)
   do
     basename "$(dirname "$REPO")"
   done
@@ -516,7 +567,7 @@ find_git_project() {
   fi
   local root_dir="$1"
   local proj_name="$2"
-  for REPO in $(find "${root_dir}" -name node_modules -prune -o -type d -name .git -print)
+  for REPO in $(find "${root_dir}" -name site-packages -prune -o -name node_modules -prune -o -type d -name .git -print)
   do
     if [[ $(basename "$(dirname "${REPO}")") == "${proj_name}" ]]; then
       dirname "${REPO}"
@@ -529,6 +580,8 @@ find_git_project() {
 find_all_git_project() {
 	local proj_name="$1"
 	local proj_dir
+    # TODO: optimization: if current dir matches project name, skip `find` and just set up environment
+
 	for DIR in "${GIT_PARENTS[@]}"
 	do
 		proj_dir=$(find_git_project "${DIR}" "${proj_name}")
@@ -540,7 +593,7 @@ find_all_git_project() {
 }
 
 # Writes to stdout one of:
-# workon -- matched a workon (py virtual environemtn) name
+# workon -- matched a workon (py virtual environment) name
 # workon replaced by pyenv on this system?
 # directory -- matched existing directory
 # nothing -- could not find directory
@@ -559,6 +612,7 @@ _project_find_dir() {
 # master command to switch current directory to project directory
 # can be customized per directory with additional setup
 # TODO: look for .project file in target directory, use settings
+# TODO: if directory has a Pipfile, run 'pipenv shell' automatically
 project() {
   local target_dir
   local basedir
@@ -587,6 +641,8 @@ USAGE
 
   # if we are in virtual environment, deactivate it
   [[ -n ${VIRTUAL_ENV} ]] && pyenv deactivate
+  # likewise for mise
+  mise deactivate
 
   if [[ -z "${target_dir}" ]]; then
     echo "I can't find project $1, sorry!"
@@ -614,7 +670,6 @@ USAGE
   basedir=$(basename "$target_dir")
   # below not needed if you use `pyenv local` to set the version for the directory
   # pyenv virtualenvs --bare | grep -q "${basedir}" && pyenv virtualenv activate "${basedir}"
-  [[ -f "${target_dir}"/.nvmrc ]] && nvm use
 
 }  # project()
 
@@ -650,9 +705,8 @@ mkcd () {
 }
 
 maketasks () {
-  grep -e '^[a-zA-Z].\+:' Makefile | grep -v ':='
+  grep -e '^[a-zA-Z].\+:' Makefile | grep -v '='
 }
-
 
 # attempt to make vmd work regardless of active node, etc.
 vmd () {
@@ -662,7 +716,9 @@ vmd () {
 }
 
 startblack () {
-    nohup blackd > ~/logs/blackd.log 2>&1 & sleep 1; cat ~/logs/blackd.log
+    nohup blackd > ${LOG_DIR}/blackd.log 2>&1 &
+	sleep 1
+	cat ${LOG_DIR}/blackd.log
 }
 
 print_virtenv () {
@@ -670,6 +726,37 @@ print_virtenv () {
 	then
 		echo "($(basename "${VIRTUAL_ENV}"))"
 	fi
+}
+
+e() {
+	# SOCKET=/tmp/emacs$(id -u)/server
+	# emacs --batch --eval "(progn (server-start) (print server-socket-dir))"
+  SOCKET=/run/user/$(id -u)/emacs/server
+  if [[ "$1" = "--help" ]]; then
+      emacs --help
+  elif [[ -z "${LOG_DIR}"  || ! -d "${LOG_DIR}" ]]; then
+      echo "NO LOGGING: env variable $LOG_DIR is not valid!" >&2
+  elif [[ -S "${SOCKET}"  ]]; then
+      date >> "${LOG_DIR}/emacsclient.log"
+      # don't rely on emacsclient starting a daemon, it only does terminal screen
+      emacsclient -s "${SOCKET}" -a emacs -n "$@" >> "${LOG_DIR}/emacsclient.log" 2>&1
+  else
+      date >> "${LOG_DIR}/emacs.log"
+      emacs "$@" >> "${LOG_DIR}/emacs.log" 2>&1 &
+  fi
+}
+
+# meanwhile there's this which doesn't use a server
+em () {
+	emacs "$@" > ${LOG_DIR}/emacs.log 2>&1 &|
+}
+
+emdebug () {
+	emacs --debug-init "$@" > ${LOG_DIR}/emacs.log 2>&1 &|
+}
+
+prelude() {
+	emacs --debug-init --init-dir ~/config/.emacs/prelude "$@" > ${LOG_DIR}/emacs.log 2>&1 &
 }
 
 # Local Variables:

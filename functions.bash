@@ -2,6 +2,11 @@
 # -*- coding: utf-8-unix -*-
 #above more for documentation, since normally this file must be sourced
 
+# bash "strict mode"
+# see http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -euo pipefail
+IFS=$'\n\t'
+
 #put some useful terminal escapes in shell variables
 #TERM_BOLD_ON=$(tput -T xterm bold)
 #TERM_BOLD_OFF=$(tput -T xterm dim)
@@ -42,13 +47,13 @@ bldpath() {
 			;;
 		::)
 			${SHOW} "${VARNAME} not set, setting it to ${DIR}"
-			export ${VARNAME}=${DIR};;
+			export "${VARNAME}"="${DIR}";;
 		*)
 			${SHOW} "${DIR} not in ${VARNAME}, adding it ${POS} existing value."
 			if [[ ${POS} == after ]]; then
-				export ${VARNAME}="${!VARNAME}":"${DIR}"
+				export "${VARNAME}"="${!VARNAME}":"${DIR}"
 			else
-				export ${VARNAME}="${DIR}":"${!VARNAME}"
+				export "${VARNAME}"="${DIR}":"${!VARNAME}"
 			fi;;
 	esac
 }
@@ -94,7 +99,7 @@ pathrm() {
     # build new path with all elements of old path not equal to $1
     for dname in "${paths[@]}"
     do
-        if [[ ! -z "${dname}" && "${dname}" != "$1" ]]
+        if [[ -n "${dname}" && "${dname}" != "$1" ]]
         then
             if [[ -z "${newpath}" ]]
             then
@@ -137,7 +142,7 @@ myps() {
 	#very much an ad hoc hack
 	#cat causes whole line to print, wrapped
 	# shellcheck disable=SC2009
-    ps -fu "$(whoami)" | command grep -v -e '/usr/libexec/' -e 'dbus' -e 'gnome-pty-helper' -e 'ibus-daemon' -e 'keyring-daemon' -e keybase -e VBoxClient | cat
+    ps -fu "$(whoami)" | command grep -v -e '/usr/libexec/' -e 'dbus' -e 'gnome-pty-helper' -e 'ibus-daemon' -e 'keyring-daemon' -e keybase -e VBoxClient -e /System -e Dropbox -e com.docker | cat
 }
 
 fixldpath() {
@@ -148,37 +153,6 @@ fixldpath() {
         bldpath newldpath "${DIR}"
     done
     export LD_LIBRARY_PATH="${newldpath}"
-}
-
-fixldpath() {
-	local paths=() i=0 newpath=""
-
-	#safely split LD_LIBRARY_PATH on ':', should handle dirnames with special chars
-	while IFS= read -r -d $':' dname; do
-		paths[i++]="$dname"
-	done < <(echo "$LD_LIBRARY_PATH":)
-
-	# build new path with all elements of old path included exactly once
-	for dname in "${paths[@]}"
-	do
-		if [[ ! -z "${dname}" && -d "${dname}" ]]
-		then
-			#extra colons simplify case
-			case ":${newpath}:" in
-				*:${dname}:*)
-				    ;;
-				*)
-					  if [[ -z "${newpath}" ]]
-						then
-							  newpath="${dname}"
-						else
-				     		newpath="${newpath}:${dname}"
-				    fi ;;
-			esac
-		fi
-  done
-
-  export LD_LIBRARY_PATH="${newpath}"
 }
 
 #TODO: modify this so that functions can have special doc comment as first line
@@ -203,56 +177,9 @@ findtextin() {
 	find "$1" -name "$2" -exec grep "$3" '{}' +
 }
 
-find_no_svn() {
-    local find_path="$1"
-    shift
-    find "${find_path}" -name '.svn' -prune -o \( "$@" \)
-}
-
-find_no_svn_grep() {
-    if  [[ $# -eq 0 ]]; then
-        echo "${FUNCNAME[0]} ${TERM_UL_ON}[path-spec]${TERM_UL_OFF} ${TERM_UL_ON}search_term${TERM_UL_OFF} ${TERM_UL_ON}additional_find_options${TERM_UL_OFF}"
-        echo "    grep selected files for lines containing ${TERM_UL_ON}search_term${TERM_UL_OFF}."
-        echo "    ${TERM_UL_ON}additional_find_options${TERM_UL_OFF} are any valid options for find (1)."
-        echo "    ${TERM_UL_ON}path_spec${TERM_UL_OFF} defaults to current directory."
-    else
-        local DIR="."
-        [[ -d "$1" ]] && { DIR="$1"; shift; }
-
-        local search_term="$1"
-        shift
-		local options="-type f"
-		# how to do this space-safe? Build an array?
-		[[ -z "$*" ]] || options="${options} $*"
-		echo find "${DIR}" -name \'.svn\' -prune -o -name \'.git\' -prune -o \( "${options}" \) -exec grep -IH \""${search_term}"\" \'{}\' +
-		find "${DIR}" -name '.svn' -prune -name '.git' -prune -o \( "${options}" \) -exec grep -IH "${search_term}" '{}' +
-
-    fi
-}
-
-find_no_svn_igrep() {
-    if  [[ $# -eq 0 ]]; then
-        echo "${FUNCNAME[0]} ${TERM_UL_ON}[path-spec]${TERM_UL_OFF} ${TERM_UL_ON}search_term${TERM_UL_OFF} ${TERM_UL_ON}additional_find_options${TERM_UL_OFF}"
-        echo "    case-insensitive grep selected files for lines containing ${TERM_UL_ON}search_term${TERM_UL_OFF}."
-        echo "    ${TERM_UL_ON}additional_find_options${TERM_UL_OFF} are any valid options for find (1)."
-    else
-        local DIR="."
-        if [[ -d "$1" ]]; then
-            DIR="$1"
-            shift
-        fi
-
-        local search_term="$1"
-        shift
-        echo find "${DIR}" -name '.svn' -prune -o -name '.git' -prune -o \( "$@" \) -exec grep -iIH \""${search_term}"\" \'{}\' \\\;
-        find "${DIR}" -name '.svn' -prune -o -name '.git' -prune -o \( "$@" \) -exec grep -iIH "${search_term}" '{}' \;
-    fi
-}
-
-
 # -----------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------------
-unalias ll 2>/dev/null
+unalias ll 2> /dev/null
 
 # shellcheck disable=SC2012
 ll() {
@@ -270,57 +197,6 @@ largest() {
     #or use ls -S
 		# shellcheck disable=SC2012
     ls -l "$@" | sort -r -g -k5
-}
-
-chkswap() {
-    if [[ $# -eq 0 ]]; then
-        echo provide an integer argument to see totals every argument seconds
-        echo this is a summary since last boot.
-    fi
-    vmstat -a -S M "$@"
-}
-
-chkdiskio() {
-    vmstat -d -S M "$@"
-}
-
-chkpartio() {
-#TODO: intelligently get list of partitions
-  for PART in /dev/sda?; do
-    vmstat -p $PART
-	done
-}
-
-execsql() {
-  if  [[ $# -eq 0 ]]; then
-    echo "${FUNCNAME[0]} ${TERM_UL_ON}sql_file${TERM_UL_OFF} ${TERM_UL_ON}additional_psql_options${TERM_UL_OFF}"
-    echo "    Call psql to execute ${TERM_UL_ON}sql_file${TERM_UL_OFF} in database netinformer as user apache."
-  else
-    local SQL_FILE="$1"
-    shift
-    psql -f "${SQL_FILE}" --db=netinformer --user=apache "$@"
-  fi
-}
-
-domysql() {
-    if  [[ $# -eq 0 ]]; then
-        echo "${FUNCNAME[0]} ${TERM_UL_ON}db_name${TERM_UL_OFF} ${TERM_UL_ON}sql_statement${TERM_UL_OFF}"
-        echo "    Execute ${TERM_UL_ON}sql_statement${TERM_UL_OFF} with mysql using database ${TERM_UL_ON}db_name${TERM_UL_OFF}."
-    else
-        mysql -u root -p <<HERE
-use ${1}
-${2}
-HERE
-    fi
-}
-
-execmysql() {
-  if  [[ $# -eq 0 ]]; then
-    echo "${FUNCNAME[0]} ${TERM_UL_ON}sql_file${TERM_UL_OFF}"
-    echo "    Execute SQL statements in ${TERM_UL_ON}sql_file${TERM_UL_OFF} with mysql."
-  else
-    mysql -u root -p < "${1}"
-  fi
 }
 
 llgv() {
@@ -522,15 +398,16 @@ curl_get_missing() {
 # alas, debian doesn't use full-featured which
 if [[ ! -f /etc/debian_release ]]; then
 	xwhich() {
-	##TODO: won't find executable file if function or alias exists
-	    (alias; declare -f) | /usr/bin/which --tty-only --read-alias --read-functions --show-tilde "$@"
+	    (alias; declare -f) | command -v which --tty-only --read-alias --read-functions --show-tilde "$@"
 	}
 fi
 
-wing() {
-    #verbose causes errors to log, etc.
-    /usr/bin/wing --verbose "$@" > "${HOME}/log/wing.log" 2>&1 &
-}
+if [[ "$(uname)" != "darwin" ]]; then
+  wing() {
+      #verbose causes errors to log, etc.
+      /usr/bin/wing --verbose "$@" > "${HOME}/log/wing.log" 2>&1 &
+  }
+fi
 
 #get list of files in a zip, dropping all info except file names
 zip_list() {
@@ -543,12 +420,6 @@ endswith() {
 
 dtree() {
     tree -d "$@"
-}
-
-extra() {
-    #switch from home directory to parallel directory on /mnt/extra
-    #for when I don't want to work through soft links
-    cd "${PWD/\\/home\\/aflanagan/\\/mnt\\/extra}" || return 1
 }
 
 view_html() {
@@ -586,41 +457,6 @@ cs() {
   python manage.py collectstatic --noinput;
 }
 
-chrome() {
-  google-chrome > ~/log/chrome.log 2>&1 &
-  # chromium-browser > ~/log/chromium.log 2>&1 &
-}
-
-# set up synonym for for firefox if user version present
-# prefer firefox-dev if present
-if [ -x ~/opt/firefox-dev/firefox ]; then
-    firefox() {
-        local FFOX=~/opt/firefox-dev/firefox
-        local FLOG=~/log/user-firefox-dev.log
-
-        if [[ $1 == --help ]]; then
-            "${FFOX}" --help
-        else
-            "${FFOX}" --no-remote "$@" > "${FLOG}" 2>&1 &
-        fi
-    }
-elif [ -x ~/opt/firefox/firefox ]; then
-    firefox() {
-        local "FFOX"=~/opt/firefox/firefox
-        local "FLOG"=~/log/user-firefox.log
-
-        if [[ $1 == --help ]]; then
-            "${FFOX}" --help
-        else
-            "${FFOX}" --no-remote "$@" > "${FLOG}" 2>&1 &
-        fi
-    }
-fi
-
-ecompile() {
-  emacs --batch -f batch-byte-compile "$@"
-}
-
 columns() {
   if [[ $# -gt 0 ]]; then
     pr -t -T -"$1"
@@ -656,14 +492,6 @@ npm_packages() {
   npm "$@" ls --depth=0 | grep -v npm | cut -d' ' -f2 | grep -v /usr | grep -v '^$' | cut -d'@' -f1
 }
 
-ssh-init() {
-	# eval "$(ssh-agent)"
-	# shouldn't need ssh-agent, gnome-keyring-daemon should set up SSH_AUTH_SOCK
-	ssh-add
-	ssh-add ~/.ssh/mgvwdm003_id_rsa
-	ssh-add ~/.ssh/id_rsa.personal
-}
-
 ####################### Project functions ##########################
 ## code to provide a "project" command, that will CD to a development
 ## project, and optionally set up the environment appropriately for the
@@ -671,34 +499,31 @@ ssh-init() {
 ## need to do this as shell functions as we change state of the shell.
 
 # array of the various project directories I have on different systems
+# directories for which each child directory is a project
 PROJECT_PARENTS=(
-  "${HOME}/Devel/atom" 
-  "${HOME}/Devel" 
-  "${HOME}/Devel/rust" 
-  "${HOME}/Devel/personal" 
-  "${HOME}/AndroidStudioProjects" 
-  "${HOME}/Documents/PlatformIO/Projects/" 
-  "${HOME}/Devel/ruby"
-  "${HOME}/Devel/docker"
-  "${HOME}/Devel/elections"
 )
+
+# directories whose descendants with a .git subdirectory are projects
+GIT_PARENTS=(
+  "${HOME}/Devel"
+  "${HOME}/bin"
+)
+
 # TODO: restrict array to only directories that actually exist on THIS system
 
+# Generate a list of all projects on this system, write completion script for
+# bash to stdout.
 _project_complete() {
 	local -a WORDS
 	# "fixed" projects with special handlong
-	if [[ $(_has_badge) == Y ]]; then
-		WORDS=(completion badge)
-	else
-		WORDS=(completion)
-	fi
+	WORDS=(completion)
 	# python virtual environments
 	# TODO: figure out how to filter out pipenv environments
 	# associated with a project directory
-	for WORD in $(workon)
-	do
-		WORDS[${#WORDS[*]}]="${WORD}"
-	done
+#	for WORD in $(workon)
+#	do
+#		WORDS[${#WORDS[*]}]="${WORD}"
+#	done
 	for DIR in ${PROJECT_PARENTS[*]}
 	do
 		for FNAME in "${DIR}"/*
@@ -709,57 +534,78 @@ _project_complete() {
 		done
 	done
 
+  for DIR in ${GIT_PARENTS[*]}
+  do
+    for PROJECT in $(get_project_names_from_git "${DIR}")
+    do
+			WORDS[${#WORDS[*]}]="${PROJECT}"
+    done
+  done
+
 	echo complete -W \'"${WORDS[*]}"\' project
 }
 
-_has_badge() {
-	if [[ -d "${HOME}/Devel/personal/hackrva/Harmony-Badge-2017/firmware" ]]; then
-		echo Y
-	elif [[ -d "${HOME}/Devel/hackrva/Harmony-Badge-2017/firmware" ]]; then
-		echo Y
-	else
-		echo N
-	fi
+# given a directory, list all its descendants with a .git subdirectory
+get_project_names_from_git() {
+  local root_dir="$1"
+  if [[ $# != 1 ]]; then
+    echo "${FUNCNAME[0]}" requires one argument -- the parent directory
+    return 1
+  fi
+  for REPO in $(find "${root_dir}" -name node_modules -prune -o -type d -name .git -print)
+  do
+    basename "$(dirname "$REPO")"
+  done
+}
+
+# given a root directory and a project name, print a directory which is named
+# the same as the project and which has a .git subdirectory
+# note: it's a problem if two directories in the tree have the same name
+find_git_project() {
+  if [[ $# -ne 2 ]]; then
+    echo "${FUNCNAME[0]} requires 2 arguments" >&2
+    return 1
+  fi
+  local root_dir="$1"
+  local proj_name="$2"
+  for REPO in $(find "${root_dir}" -name node_modules -prune -o -type d -name .git -print)
+  do
+    if [[ $(basename "$(dirname "${REPO}")") == "${proj_name}" ]]; then
+      dirname "${REPO}"
+      return
+    fi
+  done
+}
+
+# given a project name, find the git project of that name, print its directory
+find_all_git_project() {
+	local proj_name="$1"
+	local proj_dir
+	for DIR in ${GIT_PARENTS[*]}
+	do
+		proj_dir=$(find_git_project "${DIR}" "${proj_name}")
+		if [[ -n "${proj_dir}" ]]; then
+			echo "${proj_dir}"
+			return
+		fi
+	done
 }
 
 # Writes to stdout one of:
 # workon -- matched a workon (py virtual environemtn) name
+# workon replaced by pyenv on this system?
 # directory -- matched existing directory
 # nothing -- could not find directory
 _project_find_dir() {
-
-	if [[ "$1" == "badge" && $(_has_badge) == Y ]]; then
-		if [[ -d "${HOME}/Devel/personal/hackrva/Harmony-Badge-2017/firmware" ]]; then
-			echo "${HOME}/Devel/personal/hackrva/Harmony-Badge-2017/firmware"
-			return
-		fi
-		echo "${HOME}/Devel/hackrva/Harmony-Badge-2017/firmware"
-		return
-	fi
-
-	# if project is a python "virtual environment", workon does setup
-    # return "workon" as flag instead of directory name
-	local venv_dirs
-	venv_dirs=$(workon | tr '\n' '|')
-	if [[ -n ${venv_dirs} ]]; then
-		venv_dirs=${venv_dirs:0:-1}
-        # borrow pattern-matching in case statement; probably better way to do it
-		case "$1" in "${venv_dirs}")
-             echo "workon"
-             return;;
-        esac
-	fi
-
 	# search project parent directories, one at a time
 	for DIR in ${PROJECT_PARENTS[*]}
 	do
-    if [[ -d "${DIR}/$1" ]]; then
-      echo "${DIR}/$1"
-      return
-    fi
+		if [[ -d "${DIR}/$1" ]]; then
+			echo "${DIR}/$1"
+			return
+		fi
 	done
 }
-
 
 # project
 # master command to switch current directory to project directory
@@ -767,6 +613,7 @@ _project_find_dir() {
 # TODO: look for .project file in target directory, use settings
 project() {
   local target_dir
+  local basedir
 
   if [[ "$1" == "help" || -z "$1" ]]; then
     cat <<-USAGE
@@ -786,21 +633,12 @@ USAGE
 
   target_dir=$(_project_find_dir "$@")
 
-  if [[ $target_dir == "workon" ]]; then
-    # if project is a python "virtual environment", workon does setup
-    # we just need to say 'workon project_name'
-    local venv_dirs
-    venv_dirs=$(workon | tr '\n' '|')
-    #bash parameter substitution with pattern doesn't work on space (??)
-    # ${venv_dirs/ /|}
-    if [[ -n ${venv_dirs} ]]; then  # skip if none!
-      venv_dirs=${venv_dirs:0:-1}  # strip final '|'
-      eval "case $1 in ${venv_dirs}) workon $1; return;; esac"
-    fi
+  if [[ -z "${target_dir}" ]]; then
+    target_dir=$(find_all_git_project "$@")
   fi
 
   # if we are in virtual environment, deactivate it
-  [[ ! -z ${VIRTUAL_ENV} ]] && deactivate
+  [[ -n ${VIRTUAL_ENV} ]] && pyenv deactivate
 
   if [[ -z "${target_dir}" ]]; then
     echo "I can't find project $1, sorry!"
@@ -822,6 +660,11 @@ USAGE
     # Have never had that be an issue in practice
     cd "${target_dir}" || return 1
   fi
+
+  basedir=$(basename "$target_dir")
+  pyenv virtualenvs --bare | grep -q "${basedir}" && pyenv activate "${basedir}"
+  [[ -f "${target_dir}"/.nvmrc ]] && nvm use
+  
 }  # project()
 
 studio() {
@@ -865,6 +708,7 @@ kts() {
 # designed to handle
 # https://unix.stackexchange.com/a/9124/24158
 mkcd () {
+  # shellcheck disable=SC2164
   case "$1" in
     */..|*/../) cd -- "$1";; # that doesn't make any sense unless the directory already exists
     /*/../*) (cd "${1%/../*}/.." && mkdir -p "./${1##*/../}") && cd -- "$1";;
@@ -873,6 +717,18 @@ mkcd () {
     ../*) (cd .. && mkdir -p "${1#.}") && cd "$1";;
     *) mkdir -p "./$1" && cd "./$1";;
   esac
+}
+
+sdl-web () {
+    project sdl-web
+    pyenv activate livio
+    nvm use
+    docker-compose up -d
+    honcho start
+}
+
+maketasks () {
+  grep -e '^[a-zA-Z].\+:' Makefile
 }
 
 # Local Variables:

@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# bash "strict mode"
+# see http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -euo pipefail
+IFS=$'\n\t'
+
+
 # stolen from https://www.linuxjournal.com/content/bash-regular-expressions
 
 if [[ $# -lt 2 ]]; then

@@ -1,9 +1,0 @@
-#!/usr/bin/env dash
-
-EC2_INSTANCE=ec2-3-91-53-244.compute-1.amazonaws.com
-USERNAME=ubuntu
-CERTFILE=${HOME}/.ssh/basic-web-server-alloydflanagan.pem
-
-echo "ssh -i ${CERTFILE} ${USERNAME}@${EC2_INSTANCE}"
-echo "----------------------------------------------------------------------------------------------"
-ssh -i ${CERTFILE} ${USERNAME}@${EC2_INSTANCE}
