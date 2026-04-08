@@ -124,3 +124,7 @@ m-uart
 m-usb
 ocdg
 resize-home.sh
+make
+terraform*
+find_projects.sh
+.claude/
