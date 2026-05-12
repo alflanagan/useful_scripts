@@ -1,0 +1,4 @@
+#! /usr/bin/env zsh
+
+# TODO: add sed command to remove date from output
+fd . ~ -tf -S +1gi -l | cut -c35- | sed -e 's/\/Users\/adrianflanagan/~/'
