@@ -705,7 +705,7 @@ mkcd () {
 }
 
 maketasks () {
-  grep -e '^[a-zA-Z].\+:' Makefile | grep -v '='
+  command grep -e '^[a-zA-Z].\+:' Makefile | command grep -v '='
 }
 
 # attempt to make vmd work regardless of active node, etc.
