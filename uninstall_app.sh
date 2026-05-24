@@ -1,0 +1,1 @@
+./.claude/worktrees/brave-stonebraker/uninstall_app.sh
