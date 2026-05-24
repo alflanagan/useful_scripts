@@ -1,5 +1,4 @@
 #!/usr/bin/env zsh
-# -*- coding: utf-8-unix; mode: bash-ts -*-
 #above '#!' line more for documentation, since normally this file must be sourced
 # shellcheck shell=bash
 # ignore shellcheck flags of valid zsh syntax (sigh)
@@ -760,6 +759,9 @@ prelude() {
 }
 
 # Local Variables:
+# mode: sh
 # indent-tabs-mode: t
+# eval: (rainbow-delimiters-mode -1)
 # tab-width: 4
+# coding: utf-8-unix
 # End:
