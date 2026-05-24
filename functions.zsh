@@ -120,23 +120,24 @@ pathrm() {
 manmunge() {
 	if [[ $# -lt 1 ]]; then
 		cat <<-EOF
-	Usage: ${FUNCNAME[0]} ${TERM_UL_ON}directory${TERM_UL_OFF} [before|after]
-			Adds ${TERM_UL_ON}directory${TERM_UL_OFF} to MANPATH environment variable.
-			${TERM_UL_ON}directory${TERM_UL_OFF} is added to end unless 'before' is specified.
-	EOF
+		Usage: $0 ${TERM_UL_ON}directory${TERM_UL_OFF} [before|after]
+		       Adds ${TERM_UL_ON}directory${TERM_UL_OFF} to MANPATH environment variable.
+		       ${TERM_UL_ON}directory${TERM_UL_OFF} is added to end unless 'before' is specified.
+		EOF
 		return 1
 	fi
 	bldpath MANPATH "$1" "$2"
 }
 
 ldlibmunge() {
-	[[ $# -gt 0 ]] || { cat <<-EOF
-		Usage: ${FUNCNAME[0]} ${TERM_UL_ON}directory${TERM_UL_OFF} [before|after]
-			   Adds ${TERM_UL_ON}directory${TERM_UL_OFF} to LD_LIBRARY_PATH environment variable."
-			   ${TERM_UL_ON}directory${TERM_UL_OFF} is added to end unless 'before' is specified."
+	if [[ $# -lt 1 ]]; then
+		cat <<-EOF
+		Usage: $0 ${TERM_UL_ON}directory${TERM_UL_OFF} [before|after]
+		       Adds ${TERM_UL_ON}directory${TERM_UL_OFF} to LD_LIBRARY_PATH environment variable.
+		       ${TERM_UL_ON}directory${TERM_UL_OFF} is added to end unless 'before' is specified.
 		EOF
 		return 1
-	}
+	fi
 	bldpath LD_LIBRARY_PATH "$1" "$2"
 }
 
