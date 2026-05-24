@@ -469,91 +469,52 @@ npm_packages() {
 }
 
 ####################### Project functions ##########################
-## code to provide a "project" command, that will CD to a development
-## project, and optionally set up the environment appropriately for the
-## project
-## need to do this as shell functions as we change state of the shell.
-
-# array of the various project directories I have on different systems
-# directories for which each child directory is a project
-# PROJECT_PARENTS=(
-# 	/Users/adrianflanagan/Devel/personal/go
-# 	/Users/adrianflanagan/Devel/personal/web
-# 	/Users/adrianflanagan/Devel/personal/micro
-# )
+## Functions to provide a "project" command, that will CD to a development
+## project, and optionally set up the environment appropriately for the project.
+## We need to do this as shell functions because we change the state of the
+## shell.
 
 # directories whose descendants with a .git subdirectory are projects
 GIT_PARENTS=(
-  "${HOME}/Devel"
+	"${HOME}/Devel"
+	"${HOME}/.config"
 )
-
-# TODO: restrict array to only directories that actually exist on THIS system
 
 # Generate a list of all projects on this system, write completion script for
 # zsh to stdout.
 _project_complete() {
 	local -a WORDS
-	# "fixed" projects with special handlong
-	WORDS=(completion)
-	# python virtual environments
-	# TODO: figure out how to filter out pipenv environments
-	# associated with a project directory
-#	for WORD in $(workon)
-#	do
-#		WORDS[${#WORDS[*]}]="${WORD}"
-#	done
-	for DIR in "${PROJECT_PARENTS[@]}"
-	do
-		for FNAME in "${DIR}"/*
-		do
-			if [[ -d "${FNAME}" ]]; then
-				WORDS[${#WORDS[*]}]="$(basename "${FNAME}")"
-			fi
-		done
-	done
+	local DIR PROJECT
+	WORDS=(completion) # not a directory but valid word
 
   for DIR in "${GIT_PARENTS[@]}"
   do
     for PROJECT in $(get_project_names_from_git "${DIR}")
     do
-			WORDS[${#WORDS[*]}]="${PROJECT}"
+			WORDS+=("${PROJECT}")
     done
   done
 
-	echo "${WORDS[*]}"
+	echo "${WORDS[@]}"
 }
 
 # given a directory, list all its descendants with a .git subdirectory
 get_project_names_from_git() {
-  local root_dir="$1"
+  local root_dir="$1" REPO PNAME
   if [[ $# != 1 ]]; then
-    echo "${FUNCNAME[0]}" requires one argument -- the parent directory
+    echo "${0}()" requires one argument -- the parent directory
     return 1
   fi
-  # this find command is clearly very site-specific. need a list of directories
-  # which are always skipped (like node_modules/) and a custom list of
-  # directories specific to user's filesystem
-  for REPO in $(find "${root_dir}" \
-				-name site-packages -prune -o \
-				-name node_modules -prune -o \
-				-name pico-sdk -prune -o \
-				-name gems -prune -o \
-				-name target -prune -o \
-				-name tmp -prune -o \
-				-name cache -prune -o \
-				-name __pycache__ -prune -o \
-				-name builds -prune -o \
-				-name build -prune -o \
-				-name public -prune -o \
-				-name types -prune -o \
-				-name temp -prune -o \
-				-name 'static*' -prune -o \
-				-name '.*' -not -name .git -prune -o \
-				-path '*/.git/*' -prune -o \
-				-name '.venv' -prune -o \
-				-type d -name .git -print)
-  do
-    basename "$(dirname "$REPO")"
+
+  for REPO in $(fd -H -td '\.git$' "${root_dir}")
+do
+	if [[ ! -d "$(dirname ${REPO})" ]]
+	then
+		echo "ERROR: $(dirname ${REPO}) is not a directory!" >&2
+	fi
+
+    PNAME="$(basename "$(dirname "$REPO")")"
+	[[ $PNAME == '.' ]] || echo "${PNAME}"
   done
 }
 
