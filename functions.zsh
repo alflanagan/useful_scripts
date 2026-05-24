@@ -600,11 +600,6 @@ USAGE
     target_dir=$(find_all_git_project "$@")
   fi
 
-  # if we are in virtual environment, deactivate it
-  [[ -n ${VIRTUAL_ENV} ]] && pyenv deactivate
-  # likewise for mise
-  mise deactivate
-
   if [[ -z "${target_dir}" ]]; then
     echo "I can't find project $1, sorry!"
     unset PROJECT
