@@ -4,6 +4,22 @@ This is just a grab-bag of a bunch of scripts of I wrote over time for
 various purposes. In some cases, the term "useful" is probably an
 exaggeration.
 
+## LICENSE
+
+These programs are free software: you can redistribute them and/or modify them
+under the terms of the GNU Affero General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your option)
+any later version.
+
+These programs are distributed in the hope that they will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along
+with these programs. If not, see <https://www.gnu.org/licenses/>.
+
+## Some of the Files Included
+
 * __functions.bash__
 
   A set of bash functions for various things. Notable ones include
