@@ -715,6 +715,19 @@ prelude() {
 	emacs --debug-init --init-dir ~/config/.emacs/prelude "$@" > ${LOG_DIR}/emacs.log 2>&1 &
 }
 
+check_path_variables() {
+	for VAR in __MISE_ORIG_PATH CPATH FPATH GCC_LIB_DIR GCCJIT_PATH GOPATH \
+			   HOMEBREW_CELLAR INFOPATH LIBGCCJIT_DIR LIBRARY_PATH LOG_DIR \
+			   MODULE_PATH PATH PKG_CONFIG_PATH \
+               TERMINFO_DIRS; do
+		if [[ -z "${VAR}" ]]; then
+			echo "$0: ${VAR} is not set." >&2
+		else
+			${HOME}/bin/check_path_var.py "${VAR}"
+		fi
+	done
+}
+
 # Local Variables:
 # mode: sh
 # indent-tabs-mode: t
