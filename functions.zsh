@@ -496,19 +496,13 @@ GIT_PARENTS=(
 # Generate a list of all projects on this system, write completion script for
 # zsh to stdout.
 _project_complete() {
-	local -a WORDS
-	local DIR PROJECT
-	WORDS=(completion) # not a directory but valid word
+  local dir project
 
-  for DIR in "${GIT_PARENTS[@]}"
-  do
-    for PROJECT in $(get_project_names_from_git "${DIR}")
-    do
-			WORDS+=("${PROJECT}")
-    done
+  for dir in "${GIT_PARENTS[@]}"; do
+    while IFS= read -r project; do
+      print -r -- "$project"
+    done < <(get_project_names_from_git "$dir")
   done
-
-	echo "${WORDS[@]}"
 }
 
 # given a directory, list all its descendants with a .git subdirectory
