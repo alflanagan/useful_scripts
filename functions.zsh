@@ -507,41 +507,52 @@ _project_complete() {
 
 # given a directory, list all its descendants with a .git subdirectory
 get_project_names_from_git() {
-  local root_dir="$1" REPO PNAME
-  if [[ $# != 1 ]]; then
-    echo "${0}()" requires one argument -- the parent directory
+  if (( $# != 1 )); then
+    print -u2 -- \
+      'get_project_names_from_git() requires one argument -- the parent directory'
     return 1
   fi
 
-  for REPO in $(fd -H -td '\.git$' "${root_dir}")
-do
-	if [[ ! -d "$(dirname ${REPO})" ]]
-	then
-		echo "ERROR: $(dirname ${REPO}) is not a directory!" >&2
-	fi
+  local root_dir=$1 repo project_name
 
-    PNAME="$(basename "$(dirname "$REPO")")"
-	[[ $PNAME == '.' ]] || echo "${PNAME}"
-  done
+  if [[ ! -d $root_dir ]]; then
+    print -u2 -- "ERROR: not a directory: $root_dir"
+    return 1
+  fi
+
+  while IFS= read -r -d $'\0' repo; do
+    # note :h and :t suffixes, instead of dirname and basename
+    project_name=${${repo:h}:t}
+    print -r -- "$project_name"
+  done < <(fd --hidden --type directory --print0 --prune \
+			  --exclude .npm --exclude node_modules --exclude '[.]?venv' \
+			  '^\.git$' "$root_dir")
 }
 
 # given a root directory and a project name, print a directory which is named
 # the same as the project and which has a .git subdirectory
 # note: it's a problem if two directories in the tree have the same name
 find_git_project() {
-  if [[ $# -ne 2 ]]; then
-    echo "${FUNCNAME[0]} requires 2 arguments" >&2
+  if (( $# != 2 )); then
+    print -u2 -- "${FUNCNAME[0]} requires two arguments"
     return 1
   fi
-  local root_dir="$1"
-  local proj_name="$2"
-  for REPO in $(find "${root_dir}" -name site-packages -prune -o -name node_modules -prune -o -type d -name .git -print)
-  do
-    if [[ $(basename "$(dirname "${REPO}")") == "${proj_name}" ]]; then
-      dirname "${REPO}"
+
+  local root_dir=$1 proj_name=$2 repo
+
+  if [[ ! -d $root_dir ]]; then
+    print -u2 -- "ERROR: not a directory: $root_dir"
+    return 1
+  fi
+
+  while IFS= read -r -d $'\0' repo; do
+    if [[ ${${repo:h}:t} == $proj_name ]]; then
+      print -r -- "${repo:h}"
       return
     fi
-  done
+  done < <(fd --hidden --type directory --print0 --prune \
+    --exclude .npm --exclude node_modules --exclude '[.]?venv' \
+    '^\.git$' "$root_dir")
 }
 
 # given a project name, find the git project of that name, print its directory
@@ -692,9 +703,9 @@ print_virtenv () {
 }
 
 e() {
-	# SOCKET=/tmp/emacs$(id -u)/server
-	# emacs --batch --eval "(progn (server-start) (print server-socket-dir))"
-  SOCKET=/run/user/$(id -u)/emacs/server
+  # I'm not crazy about running emacs just to get the socket dir, but it seems
+  # to be the only way to get it reliably
+  SOCKET="$(emacs --batch --eval \"(progn (server-start) (print server-socket-dir))\")"
   if [[ "$1" = "--help" ]]; then
       emacs --help
   elif [[ -z "${LOG_DIR}"  || ! -d "${LOG_DIR}" ]]; then
