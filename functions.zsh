@@ -433,22 +433,6 @@ dtree() {
     tree -d "$@"
 }
 
-view_html() {
-	  local args_to_url
-	  args_to_url="${*// /%20}"
-    case "${args_to_url}" in
-        /*)
-            echo firefox --no-remote --new-window "file://localhost${args_to_url}" "&"
-            firefox --no-remote --new-window "file://localhost${args_to_url}" &
-            ;;
-        *)
-				    pwd_to_url="${PWD// /%20}"
-            echo firefox --no-remote --new-window "file://localhost${pwd_to_url}/${args_to_url}" "&"
-            firefox --no-remote --new-window "file://localhost${pwd_to_url}/${args_to_url}" &
-            ;;
-    esac
-}
-
 dbshell() {
   if [[ -f manage.py ]]; then
     python manage.py dbshell
@@ -681,13 +665,6 @@ mkcd () {
 
 maketasks () {
   command grep -e '^[a-zA-Z].\+:' Makefile | command grep -v '='
-}
-
-# attempt to make vmd work regardless of active node, etc.
-vmd () {
-  # normally functions don't create subshell, here we need one so we don't change user's
-  # active node version
-  (nvm use stable; npx vmd "$@")
 }
 
 startblack () {

@@ -53,8 +53,6 @@ directory.
 
 **ldlibmunge**: like `pathmunge` but it changes the `LD_LIBRARY_PATH` variable.
 
-**functions**: list all `zsh` functions defined in the current environment.
-
 **fixldpath**: rebuilds `LD_LIBRARY_PATH` without duplicate entries.
 
 ### Process and file-listing helpers
@@ -69,8 +67,9 @@ directory.
   listings, respectively unsorted, sorted by time, limited to the final lines,
   or passed through `commall.py`.
 
-**largest**: lists files sorted by size. **llgv**: lists files that do not match
-  a supplied pattern, using `lgv`.
+**largest**: lists files sorted by size.
+
+**llgv**: lists files that do not match a supplied pattern, using `lgv`.
 
 ### Functions for executing commands
 
@@ -129,9 +128,6 @@ directory.
 
 **dtree**: lists directory names using `tree`.
 
-**view_html**: opens an HTML file in Firefox, converting spaces in its path to
-  URL escapes.
-
 **cs**: runs Django's `collectstatic --noinput`.
 
 **npm_packages**: lists the top-level npm packages without their versions.
@@ -143,23 +139,20 @@ automatically switch to the root directory for fred, and set up any environment
 needed for the type of project. It relies on the convention that the top-most
 (root) directory for the project is the name of the project.
 
-NOTE: Uses a list of directories in the variable `GIT_PARENTS`, which you will
-need to customize.
-
 **project**: the master command. Given the base name of a project directory,
   locates that project and sets up the environment as needed. Also accepts
   `completion` as an argument, which returns a list of all projects found, and
   should be set up as completion values for `zsh` as soon as I get around to it.
 
 **get_project_names_from_git**: given a directory, list all its descendants with
-  a .git subdirectory.
+  a '.git' subdirectory.
 
 **\_project\_complete**: emits project names from each directory in
   `GIT\_PARENTS`, one name per line, for `project completion`.
 
 **find_git_project**: given 2 arguments, the root of a directory tree and the
   name of a project, search for a directory with the same name as the project
-  which has a subdirectory named `.git`. NOTE: May not return the expected
+  which has a subdirectory named '.git'. NOTE: May not return the expected
   result if 2 directories with the project name exist in the tree.
 
 **find_all_git_project**: applies `find_git_project` to each directory in
@@ -177,28 +170,30 @@ need to customize.
 
 **maketasks**: lists all targets in the `Makefile` in the current directory.
 
-**vmd**: runs `vmd` with Node's stable version in a subshell. **startblack**:
-  starts `blackd`, then displays its log. **print\_virtenv**: prints the active
-  Python virtual environment's name when one is set.
+**startblack**: starts `blackd`, then displays its log.
+
+**print\_virtenv**: prints the active Python virtual environment's name when one
+  is set.
 
 On non-Debian systems, **xwhich** extends `which` to show aliases and functions.
+
+**functions**: list all `zsh` functions defined in the current environment.
 
 ### Emacs
 
 Commands to start emacs in various ways.
 
-**e**: opens the given file in emacs, using an emacs server if one is running.
+**e**: opens the given file in `emacs`, using an emacs server if one is running.
   It discovers the server socket through a batch Emacs invocation and writes to
   `emacs.log` or `emacsclient.log` in the configured log directory.
 
-
-**em**: start a logged emacs process, don't use emacsclient even if a server is
+**em**: start a logged `emacs` process, don't use `emacsclient` even if a server is
   running.
 
-**emdebug**: starts emacs with `--debug-init` and logging, for debugging startup
+**emdebug**: starts `emacs` with `--debug-init` and logging, for debugging startup
   problems.
 
-**prelude**: starts emacs with the `prelude` configuration directory, not the
+**prelude**: starts `emacs` with the `prelude` configuration directory, not the
   default one.
 
 ### Fussy checks
