@@ -1,3 +1,10 @@
+<style>
+body {
+  max-width: 768px;
+  margin: 0 auto;
+}
+</style>
+
 # Shell Functions (zsh)
 
 ## From functions.zsh
@@ -48,7 +55,7 @@ directory.
 
 **functions**: list all `zsh` functions defined in the current environment.
 
-**fixldpath**: rebuilds `LD\_LIBRARY\_PATH` without duplicate entries.
+**fixldpath**: rebuilds `LD_LIBRARY_PATH` without duplicate entries.
 
 ### Process and file-listing helpers
 
@@ -76,14 +83,14 @@ directory.
   as "with ~/bin do cat functions.zsh". It restores the current working
   directory on exit.
 
-### Heading TBD
+### File Sizes
 
 **sum_size**: sums the sizes of the list of files passed to it. **NOTE:** `du`
   is not reliable on MacOS, need to fix this.
 
 ### Numeric Conversions
 
-**h2d**: converts a hex number to the equivalent decimal: "h2d abcd" ==>
+**h2d**: converts a hex number to the equivalent decimal: `h2d abcd` ==>
   "43981". **x2d** is a shortcut for it.
 
 **h2b**: converts a hex number to the equivalent binary: "h2b ab" ==>
@@ -106,8 +113,9 @@ directory.
 
 ### Better Names for Obscure Expressions
 
-**endswith**: evaluates `[[ "$1" = "*$2" ]]`; because the pattern is quoted,
-  it matches the literal value rather than using wildcard matching.
+**endswith**: returns success when its first argument ends with its second
+  argument. The suffix is matched literally, so special pattern characters in
+  it have no special meaning.
 
 **dbshell**: semi-intelligent shortcut for `python manage.py dbshell` (part of
   the [Django](https://djangoproject.com) framework.
@@ -119,11 +127,14 @@ directory.
 
 **zip_list**: lists the file names stored in a ZIP archive.
 
-**dtree**: lists directory names using `tree`. **view_html**: opens an HTML
-  file in Firefox, converting spaces in its path to URL escapes.
+**dtree**: lists directory names using `tree`.
 
-**cs**: runs Django's `collectstatic --noinput`. **npm_packages**: lists the
-  top-level npm packages without their versions.
+**view_html**: opens an HTML file in Firefox, converting spaces in its path to
+  URL escapes.
+
+**cs**: runs Django's `collectstatic --noinput`.
+
+**npm_packages**: lists the top-level npm packages without their versions.
 
 ### Project
 
@@ -197,6 +208,6 @@ Commands to start emacs in various ways.
   directory does not exist, or when it duplicates an earlier path. Handy for
   cleanup of variable configurations.
 
-<!-- 
+<!--
 LocalWords:  zsh MANPATH LD
  -->

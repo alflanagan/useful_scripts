@@ -424,8 +424,9 @@ zip_list() {
     unzip -l "$@" | cut -c 31- | tail -n +4  | head -n -2
 }
 
+# Returns success when the first argument ends with the literal second argument.
 endswith() {
-    [[ "$1" = "*$2" ]]
+    (( $# == 2 )) && [[ $1 == *"$2" ]]
 }
 
 dtree() {
