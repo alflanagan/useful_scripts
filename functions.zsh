@@ -476,6 +476,7 @@ npm_packages() {
 GIT_PARENTS=(
 	"${HOME}/Devel"
 	"${HOME}/.config"
+	"${HOME}/DocuStruct"
 )
 
 # Generate a list of all projects on this system, write completion script for
@@ -511,6 +512,7 @@ get_project_names_from_git() {
     print -r -- "$project_name"
   done < <(fd --hidden --type directory --print0 --prune \
 			  --exclude .npm --exclude node_modules --exclude '[.]?venv' \
+			  --exclude Library --exclude .claude
 			  '^\.git$' "$root_dir")
 }
 
@@ -631,6 +633,8 @@ USAGE
   # pyenv virtualenvs --bare | grep -q "${basedir}" && pyenv virtualenv activate "${basedir}"
 
 }  # project()
+
+##-----------------------------------------------------------------------------------------
 
 trash-size() {
   du -sh ~/.local/share/Trash
