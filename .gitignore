@@ -128,3 +128,10 @@ make
 terraform*
 find_projects.sh
 .claude/
+# something claude did?
+statusline-command.sh
+# reference, find at https://zsh.sourceforge.io/Guide/
+zshguide_us.pdf
+# not ready for prime-time
+projects.zsh 
+.idea/
